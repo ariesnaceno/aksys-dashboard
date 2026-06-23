@@ -281,7 +281,7 @@ nav{display:flex;gap:2px;}
 .profile-info{flex:1;}
 .profile-name{font-family:'Inter',-apple-system,sans-serif;font-size:36px;font-weight:900;letter-spacing:2px;color:#fff;line-height:1;}
 .profile-email{font-size:13px;color:var(--muted);margin-top:4px;font-family:'SF Mono',ui-monospace,monospace;}
-.profile-vehicle{font-size:14px;color:var(--muted2);margin-top:8px;font-weight:600;}
+.profile-vehicle{font-size:14px;color:var(--muted2);margin-top:8px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;}
 .profile-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 .p-stat{background:var(--card2);border:1px solid var(--border);padding:18px 20px;border-radius:var(--radius-card);}
 .p-stat-label{font-size:9px;letter-spacing:3px;color:var(--muted);font-weight:700;margin-bottom:8px;}
@@ -456,6 +456,49 @@ nav{display:flex;gap:2px;}
 </head>
 <body>
 
+<!-- ============================================================
+     ICON SPRITE — thin-line icons replacing emoji throughout the
+     page. stroke="currentColor" so every icon inherits whatever
+     color it's placed in (and therefore the active theme), instead
+     of emoji's fixed, OS-dependent native colors/rendering.
+     Usage: <svg class="icon"><use href="#icon-NAME"/></svg>
+     ============================================================ -->
+<svg style="display:none">
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="icon-flag" viewBox="0 0 24 24"><path d="M4 22V4"/><path d="M4 4h13l-2.5 4L17 12H4"/></symbol>
+  <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+  <symbol id="icon-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="icon-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 7.8a6 6 0 0 0 0 8.4M19 4.9a10 10 0 0 1 0 14.2M5 4.9a10 10 0 0 0 0 14.2"/></symbol>
+  <symbol id="icon-octagon-alert" viewBox="0 0 24 24"><path d="M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9Z"/><path d="M12 8v5M12 16h.01"/></symbol>
+  <symbol id="icon-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="icon-bar-chart" viewBox="0 0 24 24"><path d="M6 20V10M12 20V4M18 20v-7"/></symbol>
+  <symbol id="icon-trending-up" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M17 7h4v4"/></symbol>
+  <symbol id="icon-trending-down" viewBox="0 0 24 24"><path d="m3 7 6 6 4-4 8 8"/><path d="M17 17h4v-4"/></symbol>
+  <symbol id="icon-timer" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></symbol>
+  <symbol id="icon-refresh-cw" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.4 6.4M3 12a9 9 0 0 1 15.4-6.4"/><path d="M21 4v5h-5M3 20v-5h5"/></symbol>
+  <symbol id="icon-zap" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></symbol>
+  <symbol id="icon-smartphone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="icon-lightbulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V15h6v-.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2Z"/></symbol>
+  <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 7 7 0 0 0 20 14.5Z"/></symbol>
+  <symbol id="icon-alert-triangle" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="icon-cloud" viewBox="0 0 24 24"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4 2.1A4 4 0 0 0 7 19h10.5Z"/></symbol>
+  <symbol id="icon-cloud-rain" viewBox="0 0 24 24"><path d="M16.5 17a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4 2.1A4 4 0 0 0 6 17h10.5Z"/><path d="M8 19v2M12 19v2M16 19v2"/></symbol>
+  <symbol id="icon-cloud-lightning" viewBox="0 0 24 24"><path d="M16.5 16a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4 2.1A4 4 0 0 0 6 16h2"/><path d="m13 13-3 5h4l-3 5"/></symbol>
+  <symbol id="icon-cloud-fog" viewBox="0 0 24 24"><path d="M16 13.5a4.5 4.5 0 0 0-.5-9 6 6 0 0 0-10.9 2.6"/><path d="M4 15h16M2 19h16"/></symbol>
+  <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+  <symbol id="icon-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 18h8"/></symbol>
+  <symbol id="icon-bike" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="m12 17.5 2-7h-5l3-5h4l-1.5 3"/></symbol>
+  <symbol id="icon-car" viewBox="0 0 24 24"><path d="M3 17h18v-4l-2.5-5h-13L3 13Z"/><circle cx="7.5" cy="17.5" r="1.7"/><circle cx="16.5" cy="17.5" r="1.7"/></symbol>
+  <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="icon-apple" viewBox="0 0 24 24"><path d="M17.5 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7c1.2 0 2-1.1 2.7-2.1.8-1.2 1.2-2.4 1.2-2.4s-2-.8-2-3z" fill="currentColor" stroke="none"/><path d="M14.5 5.5c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.4-.6.7-1 1.7-.9 2.7 1 .1 2-.5 2.6-1.2z" fill="currentColor" stroke="none"/></symbol>
+</svg>
+<style>
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none;}
+</style>
+
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
   <div class="auth-wrap">
@@ -492,7 +535,7 @@ nav{display:flex;gap:2px;}
 
 <!-- BEAT TOAST -->
 <div id="beat-toast">
-  <div class="toast-title">🏁 NEW CHALLENGE</div>
+  <div class="toast-title" style="display:flex;align-items:center;gap:6px;"><svg class="icon"><use href="#icon-flag"/></svg>NEW CHALLENGE</div>
   <div id="beat-msg"></div>
 </div>
 
@@ -530,7 +573,7 @@ nav{display:flex;gap:2px;}
               <div class="theme-swatch" style="background:#FFB800"></div>
             </div>
             <div><div class="theme-name">Ducati Factory</div><div class="theme-tag">BORGO PANIGALE</div></div>
-            <span class="theme-check" id="check-ducati">✓</span>
+            <span class="theme-check" id="check-ducati"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
           <div class="theme-option" id="opt-magneti" onclick="setTheme('magneti')">
             <div class="theme-swatches">
@@ -539,7 +582,7 @@ nav{display:flex;gap:2px;}
               <div class="theme-swatch" style="background:#00B4FF"></div>
             </div>
             <div><div class="theme-name">Magneti Marelli</div><div class="theme-tag">CLASSIC ECU</div></div>
-            <span class="theme-check" id="check-magneti" style="display:none">✓</span>
+            <span class="theme-check" id="check-magneti" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
           <div class="theme-option" id="opt-pitwall" onclick="setTheme('pitwall')">
             <div class="theme-swatches">
@@ -548,7 +591,7 @@ nav{display:flex;gap:2px;}
               <div class="theme-swatch" style="background:#00CFFF"></div>
             </div>
             <div><div class="theme-name">Pit Wall</div><div class="theme-tag">MOTOGP BROADCAST</div></div>
-            <span class="theme-check" id="check-pitwall" style="display:none">✓</span>
+            <span class="theme-check" id="check-pitwall" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
           <div class="theme-option" id="opt-yamaha" onclick="setTheme('yamaha')">
             <div class="theme-swatches">
@@ -557,7 +600,7 @@ nav{display:flex;gap:2px;}
               <div class="theme-swatch" style="background:#BFD0E8"></div>
             </div>
             <div><div class="theme-name">Yamaha M1</div><div class="theme-tag">IWATA FACTORY</div></div>
-            <span class="theme-check" id="check-yamaha" style="display:none">✓</span>
+            <span class="theme-check" id="check-yamaha" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
         </div>
       </div>
@@ -579,14 +622,14 @@ nav{display:flex;gap:2px;}
         <div class="download-info">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
             <h2 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px;">AKSYS LapPro</h2>
-            <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:var(--radius-pill);">🟢 NOW LIVE</span>
+            <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:var(--radius-pill);display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#00E676;"></span>NOW LIVE</span>
             <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:var(--radius-pill);">🇵🇭 ₱999 · PH ONLY</span>
           </div>
           <p>Professional GPS lap timing for Philippine motorsport — now with live telemetry, Apple HealthKit heart rate monitoring, braking analysis, real-time pit wall, and always-on Watch screen.</p>
         </div>
         <div class="download-badges">
           <a class="dl-badge" href="https://apps.apple.com/ph/app/aksys-laptimer/id6770492272" target="_blank">
-            <div class="dl-badge-icon">🍎</div>
+            <div class="dl-badge-icon"><svg class="icon"><use href="#icon-apple"/></svg></div>
             <div class="dl-badge-text">
               <span class="dl-badge-sub">DOWNLOAD ON THE</span>
               <span class="dl-badge-name">App Store</span>
@@ -710,19 +753,19 @@ nav{display:flex;gap:2px;}
       <div class="lb-card">
         <div class="lb-header">
           <div class="section-title">LEADERBOARD</div>
-            <div style="font-size:9px;color:var(--green);letter-spacing:1px;font-weight:700;padding:3px 8px;border:1px solid rgba(0,230,118,0.3);">✓ VERIFIED</div>
+            <div style="font-size:9px;color:var(--green);letter-spacing:1px;font-weight:700;padding:3px 8px;border:1px solid rgba(0,230,118,0.3);display:inline-flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-check"/></svg>VERIFIED</div>
           <div class="lb-tabs">
             <div class="lb-tab active" onclick="switchLbCircuit('Clark International Speedway',this,'dash')">CIS</div>
             <div class="lb-tab" onclick="switchLbCircuit('Batangas Racing Circuit',this,'dash')">BRC</div>
             <div class="lb-tab" onclick="switchLbCircuit('Carmona Race Track',this,'dash')">CRT</div>
           </div>
           <div class="lb-tabs" style="margin-top:6px;">
-            <div class="lb-tab active" onclick="switchLbCategory('Motorcycle',this,'dash')">🏍️ MOTO</div>
-            <div class="lb-tab" onclick="switchLbCategory('Car',this,'dash')">🚗 CAR</div>
+            <div class="lb-tab active" onclick="switchLbCategory('Motorcycle',this,'dash')" style="display:flex;align-items:center;justify-content:center;gap:4px;"><svg class="icon"><use href="#icon-bike"/></svg>MOTO</div>
+            <div class="lb-tab" onclick="switchLbCategory('Car',this,'dash')" style="display:flex;align-items:center;justify-content:center;gap:4px;"><svg class="icon"><use href="#icon-car"/></svg>CAR</div>
           </div>
         </div>
         <div class="lb-body" id="dashboard-lb">
-          <div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">LOADING...</div></div>
+          <div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">LOADING...</div></div>
         </div>
       </div>
 
@@ -766,7 +809,7 @@ nav{display:flex;gap:2px;}
       <div class="sessions-preview">
         <div class="section-header"><div class="section-title">RECENT SUBMISSIONS</div></div>
         <div id="recent-sessions">
-          <div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO SESSIONS YET</div></div>
+          <div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO SESSIONS YET</div></div>
         </div>
       </div>
 
@@ -789,15 +832,15 @@ nav{display:flex;gap:2px;}
         <div class="filter-tab" onclick="switchLbCircuit('Carmona Race Track',this,'full')">CARMONA RACE TRACK</div>
       </div>
       <div class="lb-full-filters" style="margin-top:8px;">
-        <div class="filter-tab active" onclick="switchLbCategory('Motorcycle',this,'full')">🏍️ MOTORCYCLE</div>
-        <div class="filter-tab" onclick="switchLbCategory('Car',this,'full')">🚗 CAR</div>
+        <div class="filter-tab active" onclick="switchLbCategory('Motorcycle',this,'full')" style="display:flex;align-items:center;justify-content:center;gap:5px;"><svg class="icon"><use href="#icon-bike"/></svg>MOTORCYCLE</div>
+        <div class="filter-tab" onclick="switchLbCategory('Car',this,'full')" style="display:flex;align-items:center;justify-content:center;gap:5px;"><svg class="icon"><use href="#icon-car"/></svg>CAR</div>
       </div>
       <div class="lb-full-table">
         <div class="lb-full-header">
           <div>POS</div><div>DRIVER</div><div>LAP TIME</div><div>VEHICLE</div><div>TOP SPEED</div><div>DELTA</div>
         </div>
         <div id="full-lb">
-          <div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">LOADING...</div></div>
+          <div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">LOADING...</div></div>
         </div>
       </div>
     </div>
@@ -826,7 +869,7 @@ nav{display:flex;gap:2px;}
       <!-- ── IPHONE ONLY MODE ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">📱</div>
+          <div style="font-size:32px;color:var(--orange);"><svg class="icon"><use href="#icon-smartphone"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">IPHONE ONLY MODE — QUAD LOCK READY</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Full lap timing with no Apple Watch required. Mount iPhone on bike and go.</div>
@@ -852,19 +895,19 @@ nav{display:flex;gap:2px;}
           </div>
         </div>
         <div style="padding:12px;background:rgba(255,107,0,0.05);border:1px solid rgba(255,107,0,0.15);border-radius:8px;font-size:11px;color:var(--text-dim);">
-          💡 <strong style="color:var(--orange);">Tip:</strong> Use Quad Lock rigid mount (no vibration damper) for best G-Force and lean angle accuracy. 72pt lap time display — readable at speed. Status bar hidden for maximum screen space.
+          <svg class="icon" style="color:var(--orange);"><use href="#icon-lightbulb"/></svg> <strong style="color:var(--orange);">Tip:</strong> Use Quad Lock rigid mount (no vibration damper) for best G-Force and lean angle accuracy. 72pt lap time display — readable at speed. Status bar hidden for maximum screen space.
         </div>
       </div>
 
       <!-- ── LIVE TELEMETRY & PIT WALL ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">📡</div>
+          <div style="font-size:32px;color:var(--orange);"><svg class="icon"><use href="#icon-radio"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">LIVE TELEMETRY & PIT WALL</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">200ms real-time streaming from Watch → iPhone while the rider is on track</div>
           </div>
-          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius-pill);font-size:10px;color:#00E676;font-weight:800;letter-spacing:1px;">🟢 LIVE</div>
+          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius-pill);font-size:10px;color:#00E676;font-weight:800;letter-spacing:1px;display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#00E676;"></span>LIVE</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;">
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
@@ -889,7 +932,7 @@ nav{display:flex;gap:2px;}
       <!-- ── HEART RATE ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">❤️</div>
+          <div style="font-size:32px;color:#FF453A;"><svg class="icon"><use href="#icon-heart"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">HEART RATE MONITORING</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">MotoGP-style 5-zone HR analysis — requires Apple Watch or Wear OS</div>
@@ -897,27 +940,27 @@ nav{display:flex;gap:2px;}
         </div>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;">
           <div style="text-align:center;padding:10px 6px;background:rgba(158,158,158,0.08);border-radius:8px;border:1px solid rgba(158,158,158,0.2);">
-            <div style="font-size:16px;margin-bottom:3px;">💤</div>
+            <div style="font-size:16px;margin-bottom:3px;color:#9E9E9E;"><svg class="icon"><use href="#icon-moon"/></svg></div>
             <div style="font-size:9px;font-weight:800;color:#9E9E9E;">RESTING</div>
             <div style="font-size:9px;color:var(--text-dim);">&lt;100</div>
           </div>
           <div style="text-align:center;padding:10px 6px;background:rgba(33,150,243,0.08);border-radius:8px;border:1px solid rgba(33,150,243,0.2);">
-            <div style="font-size:16px;margin-bottom:3px;">🔵</div>
+            <div style="margin-bottom:3px;"><span class="status-dot" style="background:#2196F3;"></span></div>
             <div style="font-size:9px;font-weight:800;color:#2196F3;">WARM</div>
             <div style="font-size:9px;color:var(--text-dim);">100–130</div>
           </div>
           <div style="text-align:center;padding:10px 6px;background:rgba(76,175,80,0.08);border-radius:8px;border:1px solid rgba(76,175,80,0.2);">
-            <div style="font-size:16px;margin-bottom:3px;">🟢</div>
+            <div style="margin-bottom:3px;"><span class="status-dot" style="background:#4CAF50;"></span></div>
             <div style="font-size:9px;font-weight:800;color:#4CAF50;">RACE</div>
             <div style="font-size:9px;color:var(--text-dim);">130–160</div>
           </div>
           <div style="text-align:center;padding:10px 6px;background:rgba(255,107,0,0.08);border-radius:8px;border:1px solid rgba(255,107,0,0.3);">
-            <div style="font-size:16px;margin-bottom:3px;">🟠</div>
+            <div style="margin-bottom:3px;"><span class="status-dot" style="background:var(--orange);"></span></div>
             <div style="font-size:9px;font-weight:800;color:var(--orange);">PEAK</div>
             <div style="font-size:9px;color:var(--text-dim);">160–180</div>
           </div>
           <div style="text-align:center;padding:10px 6px;background:rgba(244,67,54,0.08);border-radius:8px;border:1px solid rgba(244,67,54,0.2);">
-            <div style="font-size:16px;margin-bottom:3px;">🔴</div>
+            <div style="margin-bottom:3px;"><span class="status-dot" style="background:#F44336;"></span></div>
             <div style="font-size:9px;font-weight:800;color:#F44336;">MAX</div>
             <div style="font-size:9px;color:var(--text-dim);">&gt;180</div>
           </div>
@@ -945,7 +988,7 @@ nav{display:flex;gap:2px;}
       <!-- ── BRAKING ANALYSIS ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">🛑</div>
+          <div style="font-size:32px;color:var(--orange);"><svg class="icon"><use href="#icon-octagon-alert"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">BRAKING ANALYSIS</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Professional braking zone detection — every lap, every corner</div>
@@ -982,7 +1025,7 @@ nav{display:flex;gap:2px;}
       <!-- ── ADVANCED ANALYTICS ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(170,0,255,0.2);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">📈</div>
+          <div style="font-size:32px;color:#AA44FF;"><svg class="icon"><use href="#icon-trending-up"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:#AA44FF;letter-spacing:3px;">ADVANCED ANALYTICS</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">MotoGP-level session data — computed automatically after every lap</div>
@@ -995,31 +1038,31 @@ nav{display:flex;gap:2px;}
             <div style="font-size:11px;color:var(--text-dim);">S1/S2/S3 per lap. Purple = session best, green = personal best.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">🔄 CORNER SPEED</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-refresh-cw"/></svg>CORNER SPEED</div>
             <div style="font-size:11px;color:var(--text-dim);">Entry, apex, exit speed per corner. Line chart + scrollable tile view.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">🚀 ACCELERATION ZONES</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-zap"/></svg>ACCELERATION ZONES</div>
             <div style="font-size:11px;color:var(--text-dim);">Full-throttle zones. Speed gain per zone, distance, entry/exit speed.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">📊 TOP SPEED TRAP</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-bar-chart"/></svg>TOP SPEED TRAP</div>
             <div style="font-size:11px;color:var(--text-dim);">Peak speed per lap bar chart. Best speed across all sessions highlighted.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">🔮 LAP PREDICTION</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-trending-up"/></svg>LAP PREDICTION</div>
             <div style="font-size:11px;color:var(--text-dim);">Live "ON FOR BEST" on Watch. Delta vs PB from Lap 3 onwards.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">🔵 TYRE DEGRADATION</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-trending-down"/></svg>TYRE DEGRADATION</div>
             <div style="font-size:11px;color:var(--text-dim);">Lap time delta vs Lap 1 curve. Shows grip drop-off per tyre compound.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">🏍️ LEAN vs SPEED</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-bike"/></svg>LEAN vs SPEED</div>
             <div style="font-size:11px;color:var(--text-dim);">Scatter plot: lean angle vs corner speed per lap. Spot untapped grip.</div>
           </div>
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
-            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;">📉 LAP TIME TREND</div>
+            <div style="font-size:10px;font-weight:700;color:#AA44FF;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-trending-down"/></svg>LAP TIME TREND</div>
             <div style="font-size:11px;color:var(--text-dim);">Line chart across session. Identifies warm-up, peak, and fatigue phases.</div>
           </div>
         </div>
@@ -1028,7 +1071,7 @@ nav{display:flex;gap:2px;}
       <!-- ── WATCH DASHBOARD MODES ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">⌚</div>
+          <div style="font-size:32px;color:var(--orange);"><svg class="icon"><use href="#icon-timer"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">CUSTOMISABLE WATCH DASHBOARD</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">4 dashboard modes — swipe Page 4 on Watch to switch</div>
@@ -1041,17 +1084,17 @@ nav{display:flex;gap:2px;}
             <div style="font-size:10px;color:var(--text-dim);">Lap time · Speed · Delta</div>
           </div>
           <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;text-align:center;">
-            <div style="font-size:20px;margin-bottom:6px;">❤️</div>
+            <div style="font-size:20px;margin-bottom:6px;color:#FF453A;"><svg class="icon"><use href="#icon-heart"/></svg></div>
             <div style="font-size:11px;font-weight:800;color:var(--orange);margin-bottom:4px;">MOTOGP</div>
             <div style="font-size:10px;color:var(--text-dim);">Lean · HR · G-Force</div>
           </div>
           <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;text-align:center;">
-            <div style="font-size:20px;margin-bottom:6px;">🛑</div>
+            <div style="font-size:20px;margin-bottom:6px;color:var(--orange);"><svg class="icon"><use href="#icon-octagon-alert"/></svg></div>
             <div style="font-size:11px;font-weight:800;color:var(--orange);margin-bottom:4px;">BRAKING</div>
             <div style="font-size:10px;color:var(--text-dim);">Big G-Force + bar</div>
           </div>
           <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;text-align:center;">
-            <div style="font-size:20px;margin-bottom:6px;">📊</div>
+            <div style="font-size:20px;margin-bottom:6px;color:var(--orange);"><svg class="icon"><use href="#icon-bar-chart"/></svg></div>
             <div style="font-size:11px;font-weight:800;color:var(--orange);margin-bottom:4px;">FULL DATA</div>
             <div style="font-size:10px;color:var(--text-dim);">2×2 sensor grid</div>
           </div>
@@ -1061,7 +1104,7 @@ nav{display:flex;gap:2px;}
       <!-- ── SESSION SETUP ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">🔧</div>
+          <div style="font-size:32px;color:var(--orange);"><svg class="icon"><use href="#icon-settings"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">SESSION SETUP</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Tag and categorise every session before you ride</div>
@@ -1071,19 +1114,19 @@ nav{display:flex;gap:2px;}
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:8px;letter-spacing:1px;">SESSION TYPES</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;">⚙️ Practice</span>
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.3);font-size:11px;color:#FFD700;font-weight:700;">⏱️ Qualifying</span>
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;">🏁 Race</span>
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);font-size:11px;color:#4CAF50;font-weight:700;">🏍️ Track Day</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><svg class="icon"><use href="#icon-settings"/></svg>Practice</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.3);font-size:11px;color:#FFD700;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><svg class="icon"><use href="#icon-timer"/></svg>Qualifying</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><svg class="icon"><use href="#icon-flag"/></svg>Race</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);font-size:11px;color:#4CAF50;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><svg class="icon"><use href="#icon-bike"/></svg>Track Day</span>
             </div>
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:8px;letter-spacing:1px;">TYRE COMPOUNDS</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;">🔴 Soft</span>
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,235,59,0.1);border:1px solid rgba(255,235,59,0.3);font-size:11px;color:#FFEB3B;font-weight:700;">🟡 Medium</span>
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:11px;color:#fff;font-weight:700;">⚪ Hard</span>
-              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;">🔵 Wet</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#F44336;"></span>Soft</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,235,59,0.1);border:1px solid rgba(255,235,59,0.3);font-size:11px;color:#FFEB3B;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#FFEB3B;"></span>Medium</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:11px;color:#fff;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#fff;"></span>Hard</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#2196F3;"></span>Wet</span>
             </div>
           </div>
         </div>
@@ -1092,7 +1135,7 @@ nav{display:flex;gap:2px;}
       <!-- ── CIRCUIT DETECTION ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">📍</div>
+          <div style="font-size:32px;color:var(--orange);"><svg class="icon"><use href="#icon-map-pin"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">SMART CIRCUIT DETECTION</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Auto-detect + auto-learn start/finish line — no manual setup needed</div>
@@ -1123,12 +1166,12 @@ nav{display:flex;gap:2px;}
       <!-- ── ANTI-CHEAT ── -->
       <div class="feature-card" style="background:var(--card2);border:1px solid rgba(0,230,118,0.2);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div style="font-size:32px;">🔒</div>
+          <div style="font-size:32px;color:#00E676;"><svg class="icon"><use href="#icon-lock"/></svg></div>
           <div>
             <div style="font-size:13px;font-weight:900;color:#00E676;letter-spacing:3px;">ANTI-CHEAT LEADERBOARD</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">3-layer verification — only real on-track times reach the leaderboard</div>
           </div>
-          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius-pill);font-size:10px;color:#00E676;font-weight:800;">✓ VERIFIED</div>
+          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius-pill);font-size:10px;color:#00E676;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-check"/></svg>VERIFIED</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
@@ -1182,7 +1225,7 @@ nav{display:flex;gap:2px;}
       </div>
       <div class="profile-sessions-card">
         <div style="padding:20px;border-bottom:1px solid var(--border);"><div class="section-title">MY SUBMITTED TIMES</div></div>
-        <div id="my-sessions"><div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO SESSIONS YET</div></div></div>
+        <div id="my-sessions"><div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO SESSIONS YET</div></div></div>
       </div>
     </div>
   </div>
@@ -1427,17 +1470,19 @@ let weatherFetchFailed = false;
 
 // WMO weather codes (used by Open-Meteo) -> condition label + icon.
 // https://open-meteo.com/en/docs#weathervariables
+function weatherIcon(name) { return `<svg class="icon"><use href="#icon-${name}"/></svg>`; }
+
 function describeWeatherCode(code, rh, windSpd) {
-  if (code >= 95) return {condition:'Thunderstorm',        icon:'⛈️'};
-  if (code >= 80) return {condition:'Rain Showers',         icon:'🌧️'};
-  if (code >= 71 && code <= 77) return {condition:'Snow',   icon:'🌨️'}; // never expected in PH, kept for completeness
-  if (code >= 61) return {condition:'Rain',                 icon:'🌧️'};
-  if (code >= 51) return {condition:'Drizzle',               icon:'🌦️'};
-  if (code === 45 || code === 48) return {condition:'Foggy', icon:'🌫️'};
-  if (windSpd > 30) return {condition:'Windy',                icon:'💨'};
-  if (rh > 80) return {condition:'Humid / Cloudy',            icon:'☁️'};
-  if (code >= 2) return {condition:'Partly Cloudy',           icon:'⛅'};
-  return {condition:'Clear / Sunny',                          icon:'☀️'};
+  if (code >= 95) return {condition:'Thunderstorm',        icon:weatherIcon('cloud-lightning')};
+  if (code >= 80) return {condition:'Rain Showers',         icon:weatherIcon('cloud-rain')};
+  if (code >= 71 && code <= 77) return {condition:'Snow',   icon:weatherIcon('cloud')}; // never expected in PH, kept for completeness
+  if (code >= 61) return {condition:'Rain',                 icon:weatherIcon('cloud-rain')};
+  if (code >= 51) return {condition:'Drizzle',               icon:weatherIcon('cloud-rain')};
+  if (code === 45 || code === 48) return {condition:'Foggy', icon:weatherIcon('cloud-fog')};
+  if (windSpd > 30) return {condition:'Windy',                icon:weatherIcon('wind')};
+  if (rh > 80) return {condition:'Humid / Cloudy',            icon:weatherIcon('cloud')};
+  if (code >= 2) return {condition:'Partly Cloudy',           icon:weatherIcon('cloud')};
+  return {condition:'Clear / Sunny',                          icon:weatherIcon('sun')};
 }
 
 async function loadWeather() {
@@ -1456,14 +1501,14 @@ async function loadWeather() {
     const isGood = condition === 'Clear / Sunny' || condition === 'Partly Cloudy';
     document.getElementById('w-temp').textContent = Math.round(tempC)+'°C';
     document.getElementById('w-condition').textContent = condition;
-    document.getElementById('w-icon').textContent = icon;
+    document.getElementById('w-icon').innerHTML = icon;
     document.getElementById('w-humidity').textContent = Math.round(rh)+'%';
     document.getElementById('w-wind').textContent = Math.round(windSpd)+' km/h';
     document.getElementById('w-status').textContent = isGood ? 'DRY' : rh > 80 ? 'WET' : 'CAUTION';
     const badge = document.getElementById('w-badge');
     badge.style.display='inline-flex';
     badge.className = 'track-status '+(isGood?'good':'caution');
-    badge.textContent = isGood ? '🟢 TRACK CONDITIONS GOOD' : '🟡 CHECK CONDITIONS';
+    badge.innerHTML = '<span class="status-dot" style="background:'+(isGood?'#00E676':'#FFD60A')+';"></span>'+(isGood?'TRACK CONDITIONS GOOD':'CHECK CONDITIONS');
     weatherFetchFailed = false;
     lastWeatherFetchAt = new Date();
   } catch(e) {
@@ -1471,13 +1516,13 @@ async function loadWeather() {
     // were live. "—" plus an explicit "unavailable" label, every time this happens.
     document.getElementById('w-temp').textContent = '—';
     document.getElementById('w-condition').textContent = 'Live data unavailable';
-    document.getElementById('w-icon').textContent = '⚠️';
+    document.getElementById('w-icon').innerHTML = '<svg class="icon"><use href="#icon-alert-triangle"/></svg>';
     document.getElementById('w-humidity').textContent = '—';
     document.getElementById('w-wind').textContent = '—';
     document.getElementById('w-status').textContent = '—';
     const badge = document.getElementById('w-badge');
     badge.style.display='inline-flex'; badge.className='track-status caution';
-    badge.textContent='⚠️ WEATHER FEED OFFLINE';
+    badge.innerHTML = '<svg class="icon"><use href="#icon-alert-triangle"/></svg>WEATHER FEED OFFLINE';
     weatherFetchFailed = true;
     // lastWeatherFetchAt intentionally left as-is: if a previous successful fetch
     // exists, the "updated Xm ago" label still reflects when that data was real.
@@ -1571,7 +1616,7 @@ async function loadDashboard() {
     const recentSnap = await db.collection('laptimes').orderBy('submittedAt','desc').limit(5).get();
     const recent = []; recentSnap.forEach(d => recent.push({id:d.id,...d.data()}));
     document.getElementById('recent-sessions').innerHTML = recent.length===0
-      ? '<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO SESSIONS YET</div></div>'
+      ? '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO SESSIONS YET</div></div>'
       : recent.map(s=>`
         <div class="lb-row ${s.userId===currentUser?.uid?'mine':''}">
           <div class="driver-info" style="flex:1;">
@@ -1581,7 +1626,7 @@ async function loadDashboard() {
           <div class="lap-time ${s.userId===currentUser?.uid?'orange':''}">${formatLapTime(s.lapSeconds)}</div>
         </div>`).join('');
   } catch(e) {
-    document.getElementById('dashboard-lb').innerHTML = '<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO TIMES YET — BE THE FIRST!</div></div>';
+    document.getElementById('dashboard-lb').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET — BE THE FIRST!</div></div>';
   }
 }
 
@@ -1616,7 +1661,7 @@ async function loadDashboardLb(circuit, category) {
 // ============================================================
 function renderLeaderboard(containerId, times, limit) {
   const container = document.getElementById(containerId);
-  if (!times||times.length===0) { container.innerHTML='<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO TIMES YET</div></div>'; return; }
+  if (!times||times.length===0) { container.innerHTML='<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET</div></div>'; return; }
   const bestSec = times[0].lapSeconds;
   const medals=['gold','silver','bronze'];
   container.innerHTML = times.slice(0,limit).map((t,i)=>`
@@ -1642,7 +1687,7 @@ async function loadFullLeaderboard(circuit, category) {
     document.getElementById('lb-count').textContent = `${times.length} ENTRIES`;
     const bestSec = times[0]?.lapSeconds;
     document.getElementById('full-lb').innerHTML = times.length===0
-      ? '<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO TIMES YET</div></div>'
+      ? '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET</div></div>'
       : times.map((t,i)=>`
         <div class="lb-full-row ${t.userId===currentUser?.uid?'mine':''}">
           <div style="font-family:'Inter',-apple-system,sans-serif;font-size:22px;font-weight:900;color:${i===0?'var(--gold)':i===1?'var(--silver)':i===2?'var(--bronze)':'var(--muted)'};">${i+1}</div>
@@ -1656,7 +1701,7 @@ async function loadFullLeaderboard(circuit, category) {
           <div>${formatDelta(t.lapSeconds,bestSec)}</div>
         </div>`).join('');
   } catch(e) {
-    document.getElementById('full-lb').innerHTML = '<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO TIMES YET</div></div>';
+    document.getElementById('full-lb').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET</div></div>';
   }
 }
 
@@ -1669,7 +1714,7 @@ async function loadProfile() {
   document.getElementById('profile-name').textContent = name.toUpperCase();
   document.getElementById('profile-email').textContent = currentUser.email;
   document.getElementById('profile-avatar').textContent = name[0].toUpperCase();
-  document.getElementById('profile-vehicle-display').textContent = '🏍️ '+(currentUserData.vehicle||'No vehicle set');
+  document.getElementById('profile-vehicle-display').innerHTML = '<svg class="icon"><use href="#icon-bike"/></svg>'+(currentUserData.vehicle||'No vehicle set');
   document.getElementById('p-sessions').textContent = currentUserData.totalSessions||0;
   document.getElementById('p-totallaps').textContent = currentUserData.totalLaps||0;
   if (currentUserData.bestLap) document.getElementById('p-bestlap').textContent = formatLapTime(currentUserData.bestLap);
@@ -1699,7 +1744,7 @@ async function loadProfile() {
     const myLapsSnap = await db.collection('laptimes').where('userId','==',currentUser.uid).orderBy('submittedAt','desc').limit(20).get();
     const mySessions = []; myLapsSnap.forEach(doc => mySessions.push(doc.data()));
     document.getElementById('my-sessions').innerHTML = mySessions.length===0
-      ? '<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-text">NO SESSIONS YET</div></div>'
+      ? '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO SESSIONS YET</div></div>'
       : mySessions.map(s=>`
         <div class="lb-row mine">
           <div class="driver-info" style="flex:1;">
@@ -1725,7 +1770,7 @@ async function saveProfile() {
     document.getElementById('header-name').textContent=name.toUpperCase().substring(0,12);
     document.getElementById('header-avatar').textContent=name[0].toUpperCase();
     document.getElementById('profile-avatar').textContent=name[0].toUpperCase();
-    document.getElementById('profile-vehicle-display').textContent='🏍️ '+veh;
+    document.getElementById('profile-vehicle-display').innerHTML='<svg class="icon"><use href="#icon-bike"/></svg>'+veh;
     setTimeout(()=>msg.textContent='',3000);
   } catch(e) { msg.textContent='Error: '+e.message; msg.style.color='var(--red)'; }
 }
