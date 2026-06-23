@@ -1412,25 +1412,35 @@ function renderCircuitsPage() {
 let lastWeatherFetchAt = null;
 let weatherFetchFailed = false;
 
+// WMO weather codes (used by Open-Meteo) -> condition label + icon.
+// https://open-meteo.com/en/docs#weathervariables
+function describeWeatherCode(code, rh, windSpd) {
+  if (code >= 95) return {condition:'Thunderstorm',        icon:'⛈️'};
+  if (code >= 80) return {condition:'Rain Showers',         icon:'🌧️'};
+  if (code >= 71 && code <= 77) return {condition:'Snow',   icon:'🌨️'}; // never expected in PH, kept for completeness
+  if (code >= 61) return {condition:'Rain',                 icon:'🌧️'};
+  if (code >= 51) return {condition:'Drizzle',               icon:'🌦️'};
+  if (code === 45 || code === 48) return {condition:'Foggy', icon:'🌫️'};
+  if (windSpd > 30) return {condition:'Windy',                icon:'💨'};
+  if (rh > 80) return {condition:'Humid / Cloudy',            icon:'☁️'};
+  if (code >= 2) return {condition:'Partly Cloudy',           icon:'⛅'};
+  return {condition:'Clear / Sunny',                          icon:'☀️'};
+}
+
 async function loadWeather() {
   try {
-    const res = await fetch('https://api.windy.com/api/point-forecast/v2', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({lat:15.2067,lon:120.5360,model:'gfs',parameters:['temp','wind','rh'],levels:['surface'],key:'ptVbjS91rHf5m5pH1ezTtSCPRhlpN0al'})
-    });
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=15.2067&longitude=120.5360&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=Asia%2FManila');
     if (!res.ok) throw new Error('weather api status '+res.status);
     const data = await res.json();
-    const tempK = data['temp-surface']?.[0];
-    const rh    = data['rh-surface']?.[0];
-    const wU    = data['wind_u-surface']?.[0];
-    const wV    = data['wind_v-surface']?.[0];
-    if (tempK == null || rh == null || wU == null || wV == null) throw new Error('incomplete weather data');
+    const cur = data.current;
+    const tempC   = cur?.temperature_2m;
+    const rh      = cur?.relative_humidity_2m;
+    const windSpd = cur?.wind_speed_10m;
+    const code    = cur?.weather_code;
+    if (tempC == null || rh == null || windSpd == null) throw new Error('incomplete weather data');
 
-    const tempC = tempK - 273.15;
-    const windSpd = Math.sqrt(wU*wU + wV*wV) * 3.6;
-    const condition = rh > 80 ? 'Humid / Cloudy' : tempC > 35 ? 'Hot & Sunny' : windSpd > 30 ? 'Windy' : 'Good Conditions';
-    const icon = rh > 80 ? '🌧️' : tempC > 35 ? '☀️' : '⛅';
-    const isGood = condition === 'Good Conditions';
+    const { condition, icon } = describeWeatherCode(code ?? 0, rh, windSpd);
+    const isGood = condition === 'Clear / Sunny' || condition === 'Partly Cloudy';
     document.getElementById('w-temp').textContent = Math.round(tempC)+'°C';
     document.getElementById('w-condition').textContent = condition;
     document.getElementById('w-icon').textContent = icon;
