@@ -689,6 +689,7 @@ nav{display:flex;gap:2px;}
           </div>
         </div>
         <div id="w-badge" class="track-status good" style="display:none;"></div>
+        <div id="w-updated" style="font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-top:10px;"></div>
       </div>
 
       <!-- Leaderboard sidebar -->
@@ -1403,17 +1404,27 @@ function renderCircuitsPage() {
 // ============================================================
 // WEATHER
 // ============================================================
+// GFS model data refreshes roughly every 6h, but the "nearest forecast step" can
+// still drift from current conditions the longer a tab stays open — refresh on an
+// interval rather than only once at page load, and show an honest "updated Xm ago"
+// timestamp instead of letting a stale or fully-failed fetch masquerade as live data.
+let lastWeatherFetchAt = null;
+let weatherFetchFailed = false;
+
 async function loadWeather() {
   try {
     const res = await fetch('https://api.windy.com/api/point-forecast/v2', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({lat:15.2067,lon:120.5360,model:'gfs',parameters:['temp','wind','rh'],levels:['surface'],key:'ptVbjS91rHf5m5pH1ezTtSCPRhlpN0al'})
     });
+    if (!res.ok) throw new Error('weather api status '+res.status);
     const data = await res.json();
-    const tempK = data['temp-surface']?.[0] ?? 305;
-    const rh    = data['rh-surface']?.[0] ?? 65;
-    const wU    = data['wind_u-surface']?.[0] ?? 3;
-    const wV    = data['wind_v-surface']?.[0] ?? 3;
+    const tempK = data['temp-surface']?.[0];
+    const rh    = data['rh-surface']?.[0];
+    const wU    = data['wind_u-surface']?.[0];
+    const wV    = data['wind_v-surface']?.[0];
+    if (tempK == null || rh == null || wU == null || wV == null) throw new Error('incomplete weather data');
+
     const tempC = tempK - 273.15;
     const windSpd = Math.sqrt(wU*wU + wV*wV) * 3.6;
     const condition = rh > 80 ? 'Humid / Cloudy' : tempC > 35 ? 'Hot & Sunny' : windSpd > 30 ? 'Windy' : 'Good Conditions';
@@ -1429,18 +1440,41 @@ async function loadWeather() {
     badge.style.display='inline-flex';
     badge.className = 'track-status '+(isGood?'good':'caution');
     badge.textContent = isGood ? '🟢 TRACK CONDITIONS GOOD' : '🟡 CHECK CONDITIONS';
+    weatherFetchFailed = false;
+    lastWeatherFetchAt = new Date();
   } catch(e) {
-    document.getElementById('w-temp').textContent = '32°C';
-    document.getElementById('w-condition').textContent = 'Partly Cloudy';
-    document.getElementById('w-icon').textContent = '⛅';
-    document.getElementById('w-humidity').textContent = '65%';
-    document.getElementById('w-wind').textContent = '12 km/h';
-    document.getElementById('w-status').textContent = 'DRY';
+    // Distinct failure state — never silently show fabricated numbers as if they
+    // were live. "—" plus an explicit "unavailable" label, every time this happens.
+    document.getElementById('w-temp').textContent = '—';
+    document.getElementById('w-condition').textContent = 'Live data unavailable';
+    document.getElementById('w-icon').textContent = '⚠️';
+    document.getElementById('w-humidity').textContent = '—';
+    document.getElementById('w-wind').textContent = '—';
+    document.getElementById('w-status').textContent = '—';
     const badge = document.getElementById('w-badge');
-    badge.style.display='inline-flex'; badge.className='track-status good';
-    badge.textContent='🟢 TRACK CONDITIONS GOOD';
+    badge.style.display='inline-flex'; badge.className='track-status caution';
+    badge.textContent='⚠️ WEATHER FEED OFFLINE';
+    weatherFetchFailed = true;
+    // lastWeatherFetchAt intentionally left as-is: if a previous successful fetch
+    // exists, the "updated Xm ago" label still reflects when that data was real.
   }
+  updateWeatherTimestamp();
 }
+
+function updateWeatherTimestamp() {
+  const el = document.getElementById('w-updated');
+  if (!el) return;
+  if (weatherFetchFailed && !lastWeatherFetchAt) { el.textContent = ''; return; }
+  if (!lastWeatherFetchAt) { el.textContent = ''; return; }
+  const mins = Math.max(0, Math.round((Date.now() - lastWeatherFetchAt.getTime()) / 60000));
+  const label = mins < 1 ? 'just now' : mins === 1 ? '1 min ago' : mins + ' min ago';
+  el.textContent = (weatherFetchFailed ? 'Last live update: ' : 'Updated ') + label;
+}
+
+// Refetch every 20 minutes (GFS model granularity makes more-frequent polling
+// pointless), and refresh the "Xm ago" label every 30s without re-fetching.
+setInterval(loadWeather, 20 * 60 * 1000);
+setInterval(updateWeatherTimestamp, 30 * 1000);
 
 // ============================================================
 // DASHBOARD STATS
