@@ -661,6 +661,7 @@ nav{display:flex;gap:2px;}
       <div class="weather-card">
         <div class="section-header">
           <div class="section-title">TRACK CONDITIONS</div>
+          <span id="w-datetime" style="font-size:10px;color:var(--muted);letter-spacing:0.5px;font-family:'SF Mono',ui-monospace,monospace;"></span>
         </div>
         <div class="weather-location">CLARK INT'L SPEEDWAY · PAMPANGA</div>
         <div class="weather-main">
@@ -1475,6 +1476,20 @@ function updateWeatherTimestamp() {
 // pointless), and refresh the "Xm ago" label every 30s without re-fetching.
 setInterval(loadWeather, 20 * 60 * 1000);
 setInterval(updateWeatherTimestamp, 30 * 1000);
+
+// Live clock at the track's own local time (Asia/Manila) — independent of the
+// visitor's device timezone, since "is this weather current" only makes sense
+// relative to what time it actually is at Clark International Speedway.
+function updateTrackDateTime() {
+  const el = document.getElementById('w-datetime');
+  if (!el) return;
+  const now = new Date();
+  const datePart = now.toLocaleDateString('en-PH', {timeZone:'Asia/Manila', weekday:'short', month:'short', day:'numeric'});
+  const timePart = now.toLocaleTimeString('en-PH', {timeZone:'Asia/Manila', hour:'2-digit', minute:'2-digit'});
+  el.textContent = datePart + ' · ' + timePart + ' PHT';
+}
+updateTrackDateTime();
+setInterval(updateTrackDateTime, 1000 * 30);
 
 // ============================================================
 // DASHBOARD STATS
