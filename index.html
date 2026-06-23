@@ -37,6 +37,17 @@
   /* legacy alias — keep for any remaining var(--orange) references */
   --orange:var(--accent); --orange-dim:var(--accent-dim);
   --orange-glow:var(--accent-glow); --orange-soft:var(--accent-soft); --orange-light:var(--secondary);
+
+  /* ── Design tokens — consistent across all themes ─────────────────────────
+     Previously every card hand-picked its own radius (2-20px, 9 different
+     values) and most had background:transparent (no fill at all, just a
+     border floating over the page). One radius scale + a real card surface
+     + a shared elevation system make every card read as the same family. */
+  --radius-card: 16px;
+  --radius-pill: 20px;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.35);
+  --shadow-card-hover: 0 10px 36px rgba(0,0,0,0.5);
+  --ease: cubic-bezier(0.4,0,0.2,1);
 }
 
 /* ── Magneti Marelli ── */
@@ -89,7 +100,7 @@ body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(v
 .auth-corner.tr{top:-1px;right:-1px;border-width:2px 2px 0 0;}
 .auth-corner.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px;}
 .auth-corner.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
-.auth-box{background:rgba(10,10,15,0.82);padding:48px;border:1px solid var(--border2);border-radius:20px;backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);}
+.auth-box{background:rgba(10,10,15,0.82);padding:48px;border:1px solid var(--border2);border-radius:var(--radius-card);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);box-shadow:var(--shadow-card-hover);}
 .auth-logo{text-align:center;margin-bottom:36px;}
 .auth-logo .brand{font-size:10px;letter-spacing:6px;color:var(--orange);font-weight:700;font-family:'Inter',sans-serif;margin-bottom:4px;}
 .auth-logo h1{font-family:'Inter',sans-serif;font-size:48px;font-weight:800;letter-spacing:-1px;line-height:1;color:#fff;}
@@ -170,7 +181,7 @@ nav{display:flex;gap:2px;}
 
 /* STATS ROW */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
-.stat-card{background:transparent;border:1px solid var(--border);padding:24px 26px;position:relative;overflow:hidden;border-radius:16px;}
+.stat-card{background:var(--card2);border:1px solid var(--border);padding:24px 26px;position:relative;overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--orange),transparent);opacity:0;transition:opacity .3s;}
 .stat-card:hover::before{opacity:1;}
 .stat-label{font-size:11px;letter-spacing:0.2px;color:var(--muted2);font-weight:500;margin-bottom:10px;font-family:'Inter',sans-serif;}
@@ -181,7 +192,7 @@ nav{display:flex;gap:2px;}
 .stat-sub{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:0.2px;}
 
 /* TRACK MAP CARD */
-.track-map-card{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.track-map-card{background:var(--card2);border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .circuit-tabs{display:flex;gap:8px;margin-bottom:24px;}
 .circuit-tab{padding:9px 22px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2px;color:var(--muted);cursor:pointer;transition:all .2s;}
 .circuit-tab.active{color:var(--orange);border-color:var(--orange);background:var(--orange-soft);}
@@ -193,7 +204,7 @@ nav{display:flex;gap:2px;}
 .track-svg-wrap svg{max-width:100%;max-height:220px;}
 
 /* WEATHER */
-.weather-card{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.weather-card{background:var(--card2);border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .weather-main{display:flex;align-items:flex-start;justify-content:space-between;}
 .weather-temp{font-family:'Inter',-apple-system,sans-serif;font-size:56px;font-weight:900;line-height:1;color:#fff;}
 .weather-icon-big{font-size:48px;line-height:1;}
@@ -208,7 +219,7 @@ nav{display:flex;gap:2px;}
 .track-status.caution{border:1px solid var(--yellow);color:var(--yellow);background:rgba(255,214,0,0.06);}
 
 /* LEADERBOARD */
-.lb-card{background:transparent;border:1px solid var(--border);padding:0;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;display:flex;flex-direction:column;min-height:0;}
+.lb-card{background:var(--card2);border:1px solid var(--border);padding:0;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-card);box-shadow:var(--shadow-card);display:flex;flex-direction:column;min-height:0;}
 .lb-header{padding:24px 24px 0;border-bottom:1px solid var(--border);}
 .lb-tabs{display:flex;gap:2px;margin-top:12px;}
 .lb-tab{flex:1;padding:8px 4px;text-align:center;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.2px;color:var(--muted);cursor:pointer;transition:all .15s;}
@@ -230,7 +241,7 @@ nav{display:flex;gap:2px;}
 .delta.leader{color:var(--green);font-size:10px;letter-spacing:1px;}
 
 /* EVENTS */
-.events-card{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.events-card{background:var(--card2);border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .event-row{display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border);}
 .event-row:last-child{border-bottom:none;}
 .event-date{min-width:52px;text-align:center;background:rgba(255,255,255,0.04);padding:8px;border:1px solid var(--border);}
@@ -245,14 +256,14 @@ nav{display:flex;gap:2px;}
 .event-type.open{border-color:rgba(0,230,118,0.4);color:var(--green);}
 
 /* RECENT SESSIONS */
-.sessions-preview{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.sessions-preview{background:var(--card2);border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 
 /* FULL LEADERBOARD PAGE */
 .lb-full-wrap{max-width:1100px;margin:0 auto;}
 .lb-full-filters{display:flex;gap:8px;align-items:center;margin-bottom:24px;flex-wrap:wrap;}
 .filter-tab{padding:8px 20px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2px;color:var(--muted);cursor:pointer;transition:all .2s;}
 .filter-tab.active{color:var(--orange);border-color:var(--orange);background:var(--orange-soft);}
-.lb-full-table{background:transparent;border:1px solid var(--border);overflow:hidden;}
+.lb-full-table{background:var(--card2);border:1px solid var(--border);overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .lb-full-header{display:grid;grid-template-columns:60px 1fr 140px 140px 100px 80px;padding:12px 20px;background:rgba(255,255,255,0.04);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:3px;color:var(--muted);font-weight:700;}
 .lb-full-row{display:grid;grid-template-columns:60px 1fr 140px 140px 100px 80px;padding:14px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s;}
 .lb-full-row:hover{background:rgba(255,255,255,0.04);}
@@ -261,7 +272,7 @@ nav{display:flex;gap:2px;}
 
 /* PROFILE */
 .profile-wrap{max-width:960px;margin:0 auto;}
-.profile-header-card{background:transparent;border:1.5px solid rgba(255,255,255,0.14);padding:32px;display:flex;gap:28px;align-items:flex-start;margin-bottom:16px;position:relative;overflow:hidden;border-radius:16px;}
+.profile-header-card{background:var(--card2);border:1.5px solid rgba(255,255,255,0.14);padding:32px;display:flex;gap:28px;align-items:flex-start;margin-bottom:16px;position:relative;overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .profile-header-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--orange),rgba(255,107,0,0.3),transparent);border-radius:16px 16px 0 0;}
 .profile-avatar-wrap{position:relative;}
 .profile-avatar{width:80px;height:80px;background:linear-gradient(135deg,var(--accent),var(--accent-dim));display:flex;align-items:center;justify-content:center;font-family:'Inter',-apple-system,sans-serif;font-size:36px;font-weight:900;color:#fff;clip-path:polygon(0 0,100% 0,100% 80%,80% 100%,0 100%);}
@@ -272,23 +283,23 @@ nav{display:flex;gap:2px;}
 .profile-email{font-size:13px;color:var(--muted);margin-top:4px;font-family:'SF Mono',ui-monospace,monospace;}
 .profile-vehicle{font-size:14px;color:var(--muted2);margin-top:8px;font-weight:600;}
 .profile-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-.p-stat{background:transparent;border:1px solid var(--border);padding:18px 20px;}
+.p-stat{background:var(--card2);border:1px solid var(--border);padding:18px 20px;border-radius:var(--radius-card);}
 .p-stat-label{font-size:9px;letter-spacing:3px;color:var(--muted);font-weight:700;margin-bottom:8px;}
 .p-stat-value{font-family:'Inter',-apple-system,sans-serif;font-size:28px;font-weight:800;color:#fff;line-height:1;}
 .p-stat-value.orange{color:var(--orange);}
-.profile-sessions-card{background:transparent;border:1px solid var(--border);padding:0;overflow:hidden;}
-.profile-edit-card{background:transparent;border:1px solid var(--border);padding:28px;margin-bottom:16px;}
+.profile-sessions-card{background:var(--card2);border:1px solid var(--border);padding:0;overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
+.profile-edit-card{background:var(--card2);border:1px solid var(--border);padding:28px;margin-bottom:16px;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
 /* SUBMIT */
 .submit-wrap{max-width:640px;margin:0 auto;}
-.submit-card{background:transparent;border:1px solid var(--border);padding:40px;}
+.submit-card{background:var(--card2);border:1px solid var(--border);padding:40px;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .form-select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border2);color:var(--text);padding:13px 16px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;font-weight:600;outline:none;cursor:pointer;appearance:none;}
 .form-select:focus{border-color:var(--orange);}
 .input-hint{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:1px;}
 
 /* TOAST */
-#beat-toast{display:none;position:fixed;bottom:24px;right:24px;background:transparent;border:1px solid var(--orange);padding:18px 24px;z-index:500;max-width:380px;}
+#beat-toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--card2);border:1px solid var(--orange);padding:18px 24px;z-index:500;max-width:380px;border-radius:12px;box-shadow:var(--shadow-card-hover);}
 #beat-toast::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--orange);}
 .toast-title{font-family:'Inter',-apple-system,sans-serif;font-size:13px;letter-spacing:3px;color:var(--orange);font-weight:700;margin-bottom:4px;}
 #beat-msg{font-size:14px;color:var(--text);}
@@ -299,7 +310,7 @@ nav{display:flex;gap:2px;}
 .empty-text{font-size:13px;letter-spacing:3px;color:var(--muted);font-weight:700;}
 
 /* APP DOWNLOAD SECTION */
-.download-card{background:transparent;border:1px solid rgba(255,107,0,0.15);padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:32px;margin-bottom:8px;position:relative;overflow:hidden;border-radius:20px;}
+.download-card{background:var(--card2);border:1px solid rgba(255,107,0,0.15);padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:32px;margin-bottom:8px;position:relative;overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
 .download-card::after{content:'AKSYS LAPPR0';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-family:'Inter',-apple-system,sans-serif;font-size:80px;font-weight:900;color:rgba(255,107,0,0.04);letter-spacing:8px;white-space:nowrap;pointer-events:none;}
 .download-info h2{font-family:'Inter',-apple-system,sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;}
 .download-info p{font-size:14px;color:var(--muted2);margin-top:6px;}
@@ -358,7 +369,9 @@ nav{display:flex;gap:2px;}
 .page.active .stat-card:nth-child(6){animation-delay:.3s;}
 
   /* ── Apple polish ── */
-  .stat-card:hover{border-color:rgba(255,107,0,0.3);transform:translateY(-1px);transition:all .2s;}
+  .stat-card:hover{border-color:rgba(255,107,0,0.3);transform:translateY(-2px);box-shadow:var(--shadow-card-hover);}
+  .feature-card{transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);}
+  .feature-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-card-hover);}
   .lb-row{transition:background .15s;}
   .lb-row:hover{background:rgba(255,255,255,0.04);}
   .circuit-tab,.lb-tab,.filter-tab,.nav-btn{transition:all .18s cubic-bezier(.25,.46,.45,.94);}
@@ -566,8 +579,8 @@ nav{display:flex;gap:2px;}
         <div class="download-info">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
             <h2 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px;">AKSYS LapPro</h2>
-            <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:20px;">🟢 NOW LIVE</span>
-            <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:20px;">🇵🇭 ₱999 · PH ONLY</span>
+            <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:var(--radius-pill);">🟢 NOW LIVE</span>
+            <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:var(--radius-pill);">🇵🇭 ₱999 · PH ONLY</span>
           </div>
           <p>Professional GPS lap timing for Philippine motorsport — now with live telemetry, Apple HealthKit heart rate monitoring, braking analysis, real-time pit wall, and always-on Watch screen.</p>
         </div>
@@ -811,14 +824,14 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── IPHONE ONLY MODE ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">📱</div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">IPHONE ONLY MODE — QUAD LOCK READY</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Full lap timing with no Apple Watch required. Mount iPhone on bike and go.</div>
           </div>
-          <div style="margin-left:auto;padding:4px 12px;background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);border-radius:20px;font-size:10px;color:var(--orange);font-weight:800;letter-spacing:1px;">NEW</div>
+          <div style="margin-left:auto;padding:4px 12px;background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-pill);font-size:10px;color:var(--orange);font-weight:800;letter-spacing:1px;">NEW</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px;">
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
@@ -844,14 +857,14 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── LIVE TELEMETRY & PIT WALL ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">📡</div>
           <div>
             <div style="font-size:13px;font-weight:900;color:var(--orange);letter-spacing:3px;">LIVE TELEMETRY & PIT WALL</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">200ms real-time streaming from Watch → iPhone while the rider is on track</div>
           </div>
-          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:20px;font-size:10px;color:#00E676;font-weight:800;letter-spacing:1px;">🟢 LIVE</div>
+          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius-pill);font-size:10px;color:#00E676;font-weight:800;letter-spacing:1px;">🟢 LIVE</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;">
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
@@ -874,7 +887,7 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── HEART RATE ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">❤️</div>
           <div>
@@ -930,7 +943,7 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── BRAKING ANALYSIS ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">🛑</div>
           <div>
@@ -967,14 +980,14 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── ADVANCED ANALYTICS ── -->
-      <div style="background:transparent;border:1px solid rgba(170,0,255,0.2);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(170,0,255,0.2);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">📈</div>
           <div>
             <div style="font-size:13px;font-weight:900;color:#AA44FF;letter-spacing:3px;">ADVANCED ANALYTICS</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">MotoGP-level session data — computed automatically after every lap</div>
           </div>
-          <div style="margin-left:auto;padding:4px 12px;background:rgba(170,0,255,0.1);border:1px solid rgba(170,0,255,0.3);border-radius:20px;font-size:10px;color:#AA44FF;font-weight:800;letter-spacing:1px;">NEW</div>
+          <div style="margin-left:auto;padding:4px 12px;background:rgba(170,0,255,0.1);border:1px solid rgba(170,0,255,0.3);border-radius:var(--radius-pill);font-size:10px;color:#AA44FF;font-weight:800;letter-spacing:1px;">NEW</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
@@ -1013,7 +1026,7 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── WATCH DASHBOARD MODES ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">⌚</div>
           <div>
@@ -1046,7 +1059,7 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── SESSION SETUP ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">🔧</div>
           <div>
@@ -1058,26 +1071,26 @@ nav{display:flex;gap:2px;}
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:8px;letter-spacing:1px;">SESSION TYPES</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;">⚙️ Practice</span>
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.3);font-size:11px;color:#FFD700;font-weight:700;">⏱️ Qualifying</span>
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;">🏁 Race</span>
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);font-size:11px;color:#4CAF50;font-weight:700;">🏍️ Track Day</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;">⚙️ Practice</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.3);font-size:11px;color:#FFD700;font-weight:700;">⏱️ Qualifying</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;">🏁 Race</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);font-size:11px;color:#4CAF50;font-weight:700;">🏍️ Track Day</span>
             </div>
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:8px;letter-spacing:1px;">TYRE COMPOUNDS</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;">🔴 Soft</span>
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(255,235,59,0.1);border:1px solid rgba(255,235,59,0.3);font-size:11px;color:#FFEB3B;font-weight:700;">🟡 Medium</span>
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:11px;color:#fff;font-weight:700;">⚪ Hard</span>
-              <span style="padding:5px 12px;border-radius:20px;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;">🔵 Wet</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);font-size:11px;color:#F44336;font-weight:700;">🔴 Soft</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,235,59,0.1);border:1px solid rgba(255,235,59,0.3);font-size:11px;color:#FFEB3B;font-weight:700;">🟡 Medium</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);font-size:11px;color:#fff;font-weight:700;">⚪ Hard</span>
+              <span style="padding:5px 12px;border-radius:var(--radius-pill);background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);font-size:11px;color:#2196F3;font-weight:700;">🔵 Wet</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- ── CIRCUIT DETECTION ── -->
-      <div style="background:transparent;border:1px solid rgba(255,107,0,0.3);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(255,107,0,0.3);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">📍</div>
           <div>
@@ -1108,14 +1121,14 @@ nav{display:flex;gap:2px;}
       </div>
 
       <!-- ── ANTI-CHEAT ── -->
-      <div style="background:transparent;border:1px solid rgba(0,230,118,0.2);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div class="feature-card" style="background:var(--card2);border:1px solid rgba(0,230,118,0.2);border-radius:var(--radius-card);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-card);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
           <div style="font-size:32px;">🔒</div>
           <div>
             <div style="font-size:13px;font-weight:900;color:#00E676;letter-spacing:3px;">ANTI-CHEAT LEADERBOARD</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">3-layer verification — only real on-track times reach the leaderboard</div>
           </div>
-          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:20px;font-size:10px;color:#00E676;font-weight:800;">✓ VERIFIED</div>
+          <div style="margin-left:auto;padding:4px 12px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius-pill);font-size:10px;color:#00E676;font-weight:800;">✓ VERIFIED</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
@@ -1372,7 +1385,7 @@ function switchCircuit(key, el) {
 function renderCircuitsPage() {
   const grid = document.getElementById('circuits-grid');
   grid.innerHTML = Object.values(circuits).map(c => `
-    <div style="background:transparent;border:1px solid var(--border);overflow:hidden;">
+    <div class="feature-card" style="background:var(--card2);border:1px solid var(--border);overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);">
       <div style="padding:20px 20px 0;">${c.svg}</div>
       <div style="padding:20px;border-top:1px solid var(--border);">
         <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
