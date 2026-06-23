@@ -142,10 +142,34 @@ nav{display:flex;gap:2px;}
 .section-title::before{content:'';width:3px;height:14px;background:var(--orange);border-radius:2px;}
 
 /* DASHBOARD GRID */
-.dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr 360px;grid-template-rows:auto;gap:24px;}
+/* Named areas instead of implicit auto-placement + a hardcoded grid-row span on
+   the sidebar — the previous version (grid-row:2/6 on .lb-card) was a magic number
+   that silently fell out of sync whenever a row was added/removed elsewhere (it had,
+   which is part of why the sidebar looked misaligned). Named areas make the sidebar's
+   height a direct, guaranteed consequence of the two rows it sits beside. */
+.dash-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 360px;
+  grid-template-areas:
+    "banner       banner       banner       banner"
+    "lbl-overview lbl-overview lbl-overview lbl-overview"
+    "stats        stats        stats        stats"
+    "lbl-circuits lbl-circuits lbl-circuits lbl-circuits"
+    "track        track        weather      sidebar"
+    "lbl-activity lbl-activity lbl-activity sidebar"
+    "events       events       sessions     sidebar";
+  gap:24px;
+}
+.download-card{grid-area:banner;}
+.stats-row{grid-area:stats;}
+.track-map-card{grid-area:track;}
+.weather-card{grid-area:weather;}
+.lb-card{grid-area:sidebar;align-self:stretch;}
+.events-card{grid-area:events;}
+.sessions-preview{grid-area:sessions;}
 
 /* STATS ROW */
-.stats-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 .stat-card{background:transparent;border:1px solid var(--border);padding:24px 26px;position:relative;overflow:hidden;border-radius:16px;}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--orange),transparent);opacity:0;transition:opacity .3s;}
 .stat-card:hover::before{opacity:1;}
@@ -157,7 +181,7 @@ nav{display:flex;gap:2px;}
 .stat-sub{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:0.2px;}
 
 /* TRACK MAP CARD */
-.track-map-card{background:transparent;border:1px solid var(--border);padding:28px;grid-column:1/3;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.track-map-card{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
 .circuit-tabs{display:flex;gap:8px;margin-bottom:24px;}
 .circuit-tab{padding:9px 22px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2px;color:var(--muted);cursor:pointer;transition:all .2s;}
 .circuit-tab.active{color:var(--orange);border-color:var(--orange);background:var(--orange-soft);}
@@ -169,7 +193,7 @@ nav{display:flex;gap:2px;}
 .track-svg-wrap svg{max-width:100%;max-height:220px;}
 
 /* WEATHER */
-.weather-card{background:transparent;border:1px solid var(--border);padding:28px;grid-column:3/4;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.weather-card{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
 .weather-main{display:flex;align-items:flex-start;justify-content:space-between;}
 .weather-temp{font-family:'Inter',-apple-system,sans-serif;font-size:56px;font-weight:900;line-height:1;color:#fff;}
 .weather-icon-big{font-size:48px;line-height:1;}
@@ -184,12 +208,12 @@ nav{display:flex;gap:2px;}
 .track-status.caution{border:1px solid var(--yellow);color:var(--yellow);background:rgba(255,214,0,0.06);}
 
 /* LEADERBOARD */
-.lb-card{background:transparent;border:1px solid var(--border);grid-column:4/5;grid-row:2/6;padding:0;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.lb-card{background:transparent;border:1px solid var(--border);padding:0;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;display:flex;flex-direction:column;min-height:0;}
 .lb-header{padding:24px 24px 0;border-bottom:1px solid var(--border);}
 .lb-tabs{display:flex;gap:2px;margin-top:12px;}
 .lb-tab{flex:1;padding:8px 4px;text-align:center;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.2px;color:var(--muted);cursor:pointer;transition:all .15s;}
 .lb-tab.active{color:var(--orange);border-color:var(--orange);background:var(--orange-soft);}
-.lb-body{overflow-y:auto;max-height:520px;}
+.lb-body{overflow-y:auto;flex:1;min-height:0;}
 .lb-row{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--border);transition:background .15s;}
 .lb-row:hover{background:rgba(255,255,255,0.04);}
 .lb-row.gold .rank{color:var(--gold);}
@@ -206,7 +230,7 @@ nav{display:flex;gap:2px;}
 .delta.leader{color:var(--green);font-size:10px;letter-spacing:1px;}
 
 /* EVENTS */
-.events-card{background:transparent;border:1px solid var(--border);padding:28px;grid-column:1/3;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.events-card{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
 .event-row{display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border);}
 .event-row:last-child{border-bottom:none;}
 .event-date{min-width:52px;text-align:center;background:rgba(255,255,255,0.04);padding:8px;border:1px solid var(--border);}
@@ -221,7 +245,7 @@ nav{display:flex;gap:2px;}
 .event-type.open{border-color:rgba(0,230,118,0.4);color:var(--green);}
 
 /* RECENT SESSIONS */
-.sessions-preview{background:transparent;border:1px solid var(--border);padding:28px;grid-column:3/4;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
+.sessions-preview{background:transparent;border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;}
 
 /* FULL LEADERBOARD PAGE */
 .lb-full-wrap{max-width:1100px;margin:0 auto;}
@@ -275,7 +299,7 @@ nav{display:flex;gap:2px;}
 .empty-text{font-size:13px;letter-spacing:3px;color:var(--muted);font-weight:700;}
 
 /* APP DOWNLOAD SECTION */
-.download-card{background:transparent;border:1px solid rgba(255,107,0,0.15);padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:32px;margin-bottom:8px;position:relative;overflow:hidden;grid-column:1/-1;border-radius:20px;}
+.download-card{background:transparent;border:1px solid rgba(255,107,0,0.15);padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:32px;margin-bottom:8px;position:relative;overflow:hidden;border-radius:20px;}
 .download-card::after{content:'AKSYS LAPPR0';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-family:'Inter',-apple-system,sans-serif;font-size:80px;font-weight:900;color:rgba(255,107,0,0.04);letter-spacing:8px;white-space:nowrap;pointer-events:none;}
 .download-info h2{font-family:'Inter',-apple-system,sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;}
 .download-info p{font-size:14px;color:var(--muted2);margin-top:6px;}
@@ -294,8 +318,28 @@ nav{display:flex;gap:2px;}
 .lean-gauge-wrap{display:flex;flex-direction:column;align-items:center;}
 
 /* RESPONSIVE minimal */
-@media(max-width:1200px){.dash-grid{grid-template-columns:1fr 1fr 340px;gap:18px;}.stats-row{grid-template-columns:repeat(3,1fr);}.lb-card{grid-column:3/4;grid-row:2/6;}.events-card,.sessions-preview{grid-column:1/3;}.track-map-card{grid-column:1/3;}.weather-card{grid-column:1/2;}}
-@media(max-width:900px){.dash-grid{grid-template-columns:1fr 1fr;gap:14px;}.lb-card{grid-column:1/-1;grid-row:auto;}.track-map-card,.weather-card,.events-card,.sessions-preview,.download-card{grid-column:1/-1;}.stats-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:1200px){
+  .dash-grid{
+    grid-template-columns:1fr 1fr 340px;
+    grid-template-areas:
+      "banner       banner       banner"
+      "lbl-overview lbl-overview lbl-overview"
+      "stats        stats        stats"
+      "lbl-circuits lbl-circuits lbl-circuits"
+      "track        track        sidebar"
+      "weather      weather      sidebar"
+      "lbl-activity lbl-activity sidebar"
+      "events       events       sidebar"
+      "sessions     sessions     sidebar";
+    gap:18px;
+  }
+  .stats-row{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:900px){
+  .dash-grid{grid-template-columns:1fr 1fr;grid-template-areas:none;gap:14px;}
+  .download-card,.track-map-card,.weather-card,.lb-card,.events-card,.sessions-preview{grid-column:1/-1;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
 
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:4px;height:4px;}
@@ -526,27 +570,6 @@ nav{display:flex;gap:2px;}
             <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:20px;">🇵🇭 ₱999 · PH ONLY</span>
           </div>
           <p>Professional GPS lap timing for Philippine motorsport — now with live telemetry, Apple HealthKit heart rate monitoring, braking analysis, real-time pit wall, and always-on Watch screen.</p>
-          <div class="feature-chips">
-            <span class="chip new">IPHONE ONLY MODE</span>
-            <span class="chip new">LIVE TELEMETRY</span>
-            <span class="chip new">APPLE HEALTHKIT</span>
-            <span class="chip new">HEALTHKIT ONBOARDING</span>
-            <span class="chip new">BRAKING ANALYSIS</span>
-            <span class="chip new">PIT WALL</span>
-            <span class="chip new">SECTOR TIMING</span>
-            <span class="chip new">CORNER SPEED</span>
-            <span class="chip new">LAP PREDICTION</span>
-            <span class="chip new">TYRE DEGRADATION</span>
-            <span class="chip new">SESSION TYPES</span>
-            <span class="chip new">ALWAYS-ON WATCH</span>
-            <span class="chip new">AUTO TRACK DETECT</span>
-            <span class="chip">WATCHOS 26</span>
-            <span class="chip">GPS LAP TIMING</span>
-            <span class="chip">AUTO S/F LEARN</span>
-            <span class="chip">RACING LINE MAP</span>
-            <span class="chip">PDF / CSV EXPORT</span>
-            <span class="chip">FIREBASE SYNC</span>
-          </div>
         </div>
         <div class="download-badges">
           <a class="dl-badge" href="https://apps.apple.com/ph/app/aksys-laptimer/id6770492272" target="_blank">
@@ -569,7 +592,7 @@ nav{display:flex;gap:2px;}
       <!-- Stats Row -->
 
       <!-- Section label: Overview -->
-      <div style="grid-column:1/-1;display:flex;align-items:center;gap:14px;">
+      <div style="grid-area:lbl-overview;display:flex;align-items:center;gap:14px;">
         <div style="width:3px;height:18px;background:var(--orange);border-radius:2px;"></div>
         <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;">Overview</span>
         <div style="flex:1;height:1px;background:var(--border);"></div>
@@ -610,7 +633,7 @@ nav{display:flex;gap:2px;}
 
 
       <!-- Section label: Circuits -->
-      <div style="grid-column:1/-1;display:flex;align-items:center;gap:14px;padding-top:8px;">
+      <div style="grid-area:lbl-circuits;display:flex;align-items:center;gap:14px;padding-top:8px;">
         <div style="width:3px;height:18px;background:var(--orange);border-radius:2px;"></div>
         <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;">Circuits</span>
         <div style="flex:1;height:1px;background:var(--border);"></div>
@@ -691,7 +714,7 @@ nav{display:flex;gap:2px;}
       <!-- Upcoming Events -->
 
       <!-- Section label: Activity -->
-      <div style="grid-column:1/4;display:flex;align-items:center;gap:14px;padding-top:4px;">
+      <div style="grid-area:lbl-activity;display:flex;align-items:center;gap:14px;padding-top:4px;">
         <div style="width:3px;height:18px;background:var(--orange);border-radius:2px;"></div>
         <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;">Activity</span>
         <div style="flex:1;height:1px;background:var(--border);"></div>
