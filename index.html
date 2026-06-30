@@ -3,25 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AKSYS LapPro — Philippine Motorsport Dashboard</title>
+<title>AKSYS LapTimer — Philippine Motorsport Dashboard</title>
 <meta name="description" content="Verified lap times, leaderboards, and live telemetry for Philippine motorsport — Clark International Speedway, Batangas Racing Circuit, and Carmona Race Track.">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="AKSYS LapPro — Philippine Motorsport Dashboard">
+<meta property="og:title" content="AKSYS LapTimer — Philippine Motorsport Dashboard">
 <meta property="og:description" content="Verified lap times, leaderboards, and live telemetry for Philippine motorsport — Clark International Speedway, Batangas Racing Circuit, and Carmona Race Track.">
-<meta property="og:image" content="https://aksys-lapspro.web.app/assets/og-image.jpg">
-<meta property="og:url" content="https://aksys-lapspro.web.app">
+<meta property="og:image" content="https://laptimer.ak-sys.com/assets/og-image.jpg">
+<meta property="og:url" content="https://laptimer.ak-sys.com">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AKSYS LapPro — Philippine Motorsport Dashboard">
+<meta name="twitter:title" content="AKSYS LapTimer — Philippine Motorsport Dashboard">
 <meta name="twitter:description" content="Verified lap times, leaderboards, and live telemetry for Philippine motorsport.">
-<meta name="twitter:image" content="https://aksys-lapspro.web.app/assets/og-image.jpg">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=SF+Mono&display=swap" rel="stylesheet">
+<meta name="twitter:image" content="https://laptimer.ak-sys.com/assets/og-image.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=SF+Mono&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
 <style>
-/* ── AKSYS LapPro — Theme System ────────────────────────────────────────────── */
+/* ── AKSYS LapTimer — Theme System ────────────────────────────────────────────── */
 /* Default: Ducati Factory */
 :root {
   --accent:#E8000D;      --accent-dim:#B0000A;
@@ -200,8 +201,12 @@ nav{display:flex;gap:2px;}
 .track-stat{text-align:center;}
 .track-stat-val{font-family:'Inter',-apple-system,sans-serif;font-size:22px;font-weight:800;color:var(--orange);}
 .track-stat-label{font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:600;}
-.track-svg-wrap{display:flex;align-items:center;justify-content:center;margin:16px 0;min-height:200px;}
-.track-svg-wrap svg{max-width:100%;max-height:220px;}
+.track-svg-wrap{display:flex;align-items:stretch;justify-content:center;margin:16px 0;}
+.track-note{width:100%;border:1px solid var(--border);background:rgba(255,255,255,0.035);border-radius:14px;padding:18px 20px;}
+.track-note-title{font-family:'Inter',sans-serif;font-size:20px;font-weight:900;color:#fff;margin-bottom:6px;}
+.track-note-meta{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;}
+.track-note-body{font-size:13px;line-height:1.55;color:var(--muted2);}
+.track-note-foot{margin-top:12px;font-size:11px;line-height:1.45;color:var(--muted);}
 
 /* WEATHER */
 .weather-card{background:var(--card2);border:1px solid var(--border);padding:28px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
@@ -311,9 +316,17 @@ nav{display:flex;gap:2px;}
 
 /* APP DOWNLOAD SECTION */
 .download-card{background:var(--card2);border:1px solid rgba(255,107,0,0.15);padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:32px;margin-bottom:8px;position:relative;overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);}
-.download-card::after{content:'AKSYS LAPPR0';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-family:'Inter',-apple-system,sans-serif;font-size:80px;font-weight:900;color:rgba(255,107,0,0.04);letter-spacing:8px;white-space:nowrap;pointer-events:none;}
+.download-card::after{content:'AKSYS LAPTIMER';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-family:'Inter',-apple-system,sans-serif;font-size:80px;font-weight:900;color:rgba(255,107,0,0.04);letter-spacing:8px;white-space:nowrap;pointer-events:none;}
 .download-info h2{font-family:'Inter',-apple-system,sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;}
 .download-info p{font-size:14px;color:var(--muted2);margin-top:6px;}
+.product-tiers{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;margin-top:16px;max-width:720px;}
+.tier-card{background:rgba(255,255,255,0.035);border:1px solid var(--border2);border-radius:12px;padding:14px;position:relative;}
+.tier-card.pro{border-color:rgba(255,107,0,0.42);background:rgba(255,107,0,0.055);}
+.tier-name{font-size:12px;font-weight:900;letter-spacing:2px;color:var(--text);text-transform:uppercase;margin-bottom:6px;}
+.tier-price{font-family:'Inter',sans-serif;font-size:18px;font-weight:900;color:var(--orange);margin-bottom:8px;}
+.tier-copy{font-size:11px;line-height:1.45;color:var(--muted2);}
+.tier-pill{display:inline-flex;margin-bottom:8px;border:1px solid rgba(255,255,255,0.16);border-radius:var(--radius-pill);padding:3px 8px;font-size:8px;font-weight:900;letter-spacing:1.6px;color:var(--muted2);}
+.tier-card.pro .tier-pill{border-color:rgba(255,107,0,0.4);color:var(--orange);}
 .download-badges{display:flex;gap:10px;}
 .dl-badge{padding:10px 20px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;text-decoration:none;}
 .dl-badge:hover{border-color:var(--orange);background:rgba(255,107,0,0.06);}
@@ -324,6 +337,31 @@ nav{display:flex;gap:2px;}
 .feature-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
 .chip{padding:4px 12px;border:1px solid var(--border2);font-size:10px;letter-spacing:2px;color:var(--muted2);font-weight:600;}
 .chip.new{border-color:rgba(0,230,118,0.4);color:var(--green);}
+
+/* PRODUCT PAGES */
+.page-wrap{max-width:1180px;margin:0 auto;padding:24px 32px;}
+.page-hero{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:28px;margin-bottom:18px;}
+.page-kicker{font-size:10px;color:var(--orange);font-weight:800;letter-spacing:4px;margin-bottom:8px;}
+.page-title{font-family:'Inter',sans-serif;font-size:28px;font-weight:900;letter-spacing:-0.5px;margin-bottom:8px;}
+.page-copy{font-size:14px;color:var(--muted2);line-height:1.6;max-width:760px;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.info-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:18px;}
+.info-label{font-size:9px;letter-spacing:2.5px;color:var(--muted);font-weight:800;margin-bottom:8px;text-transform:uppercase;}
+.info-value{font-family:'Inter',sans-serif;font-size:22px;font-weight:900;color:#fff;}
+.info-sub{font-size:12px;color:var(--muted2);line-height:1.45;margin-top:6px;}
+.split-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;}
+.action-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.ghost-btn{border:1px solid var(--border2);background:rgba(255,255,255,0.04);color:var(--text);border-radius:10px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:800;letter-spacing:.5px;cursor:pointer;}
+.ghost-btn:hover{border-color:var(--orange);color:var(--orange);}
+.mini-table{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-card);overflow:hidden;box-shadow:var(--shadow-card);}
+.mini-row{display:grid;grid-template-columns:1fr 120px 100px;gap:12px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);}
+.mini-row:last-child{border-bottom:none;}
+.status-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.04);border-radius:999px;padding:5px 10px;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted2);}
+.status-pill.good{color:var(--green);border-color:rgba(48,209,88,.35);background:rgba(48,209,88,.06);}
+.status-pill.warn{color:var(--yellow);border-color:rgba(255,214,10,.35);background:rgba(255,214,10,.06);}
+.form-inline{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px;}
+.form-inline input,.form-inline select{background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;font-family:'Inter',sans-serif;}
+@media(max-width:900px){.split-grid{grid-template-columns:1fr}.page-wrap{padding:18px}.mini-row{grid-template-columns:1fr}.nav-btn{padding:0 9px;font-size:11px}}
 
 /* LEAN GAUGE in profile (SVG) */
 .lean-gauge-wrap{display:flex;flex-direction:column;align-items:center;}
@@ -409,7 +447,8 @@ nav{display:flex;gap:2px;}
   .theme-switcher-label{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted2);}
   .theme-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent-glow);}
   .theme-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:6px;min-width:200px;z-index:300;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
-  .theme-switcher:hover .theme-dropdown{display:block;}
+  .theme-switcher:hover .theme-dropdown,
+  .theme-switcher.open .theme-dropdown{display:block;}
   .theme-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;}
   .theme-option:hover{background:var(--accent-soft);}
   .theme-option.active{background:var(--accent-soft);border:1px solid var(--accent);}
@@ -451,6 +490,1046 @@ nav{display:flex;gap:2px;}
   .event-day{font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px;}
   .event-month{font-family:'Inter',sans-serif;}
   .event-title{font-family:'Inter',sans-serif;}
+
+/* ── MotoGP Broadcast Treatment ───────────────────────────────────────────── */
+:root{
+  --radius-card: 10px;
+  --radius-pill: 4px;
+  --shadow-card: 0 18px 42px rgba(0,0,0,0.42);
+  --shadow-card-hover: 0 24px 54px rgba(0,0,0,0.58);
+}
+body{
+  background:
+    radial-gradient(circle at 15% 0%, rgba(232,0,13,0.18), transparent 34%),
+    linear-gradient(135deg, rgba(232,0,13,0.10) 0 13%, transparent 13% 48%, rgba(255,255,255,0.018) 48% 49%, transparent 49%),
+    var(--bg);
+}
+body::before{
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.018), transparent 30%, rgba(255,255,255,0.012)),
+    repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.045) 2px,rgba(0,0,0,0.045) 4px);
+}
+body::after{background-size:88px 88px;opacity:.72;}
+header{
+  height:62px;
+  background:rgba(4,0,0,.86);
+  border-bottom:1px solid rgba(232,0,13,.28);
+  box-shadow:0 10px 32px rgba(0,0,0,.38);
+}
+.logo-icon{
+  border-radius:6px;
+  transform:skew(-7deg);
+  box-shadow:0 0 0 1px rgba(255,255,255,.14) inset;
+}
+.logo-text .brand,.auth-logo .brand{letter-spacing:4px;}
+.nav-btn{
+  height:62px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  position:relative;
+}
+.nav-btn.active{
+  background:linear-gradient(180deg, transparent, rgba(232,0,13,.08));
+}
+.nav-btn.active::after{
+  content:'';
+  position:absolute;
+  left:10px;right:10px;bottom:-1px;height:3px;
+  background:var(--accent);
+  box-shadow:0 0 18px var(--accent-glow);
+}
+.live-badge,.user-badge,.btn-logout,.theme-switcher{
+  border-radius:3px;
+  background:rgba(255,255,255,.035);
+  text-transform:uppercase;
+  font-weight:900;
+}
+.page{padding:28px 34px;}
+.section-title{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:2.6px;
+}
+.section-title::before{
+  width:4px;
+  height:22px;
+  border-radius:0;
+  box-shadow:0 0 14px var(--accent-glow);
+}
+.dash-grid{gap:20px;}
+.download-card,.stat-card,.track-map-card,.weather-card,.lb-card,.events-card,.sessions-preview,.info-card,.page-hero,.profile-header-card,.profile-edit-card,.profile-sessions-card,.submit-card{
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.055), transparent 26%),
+    linear-gradient(180deg, rgba(11,11,14,.94), rgba(18,0,0,.88));
+  border-color:rgba(255,255,255,.09);
+  border-radius:10px;
+  box-shadow:var(--shadow-card), inset 0 1px 0 rgba(255,255,255,.055);
+}
+.download-card{
+  min-height:300px;
+  padding:38px 48px;
+  border-color:rgba(232,0,13,.28);
+}
+.download-card::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(110deg, transparent 0 52%, rgba(232,0,13,.08) 52% 64%, transparent 64%),
+    linear-gradient(180deg, rgba(232,0,13,.12), transparent 34%);
+  pointer-events:none;
+}
+.download-card::after{
+  color:rgba(255,255,255,.035);
+  font-style:italic;
+  letter-spacing:3px;
+}
+.download-info{position:relative;z-index:1;}
+.download-info h2{
+  font-size:30px;
+  font-weight:950;
+  letter-spacing:-.8px;
+  text-transform:none;
+}
+.download-info p{
+  max-width:780px;
+  font-size:14px;
+  line-height:1.55;
+}
+.motogp-strip{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 14px;
+}
+.race-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 10px;
+  border-radius:4px;
+  border:1px solid rgba(255,255,255,.13);
+  background:rgba(0,0,0,.42);
+  color:var(--muted2);
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:1.8px;
+  text-transform:uppercase;
+}
+.race-chip.live{color:#fff;background:var(--accent);border-color:var(--accent);}
+.race-chip.green{color:var(--green);border-color:rgba(48,209,88,.38);}
+.race-chip.cyan{color:var(--cyan);border-color:rgba(100,210,255,.35);}
+.product-tiers{gap:12px;}
+.tier-card{
+  border-radius:10px;
+  background:rgba(0,0,0,.38);
+  border-color:rgba(255,255,255,.12);
+}
+.tier-card.pro{
+  background:linear-gradient(135deg, rgba(232,0,13,.13), rgba(0,0,0,.32));
+  border-color:rgba(232,0,13,.56);
+}
+.tier-pill{border-radius:3px;background:rgba(255,255,255,.045);}
+.tier-price{font-size:20px;}
+.download-badges{position:relative;z-index:1;}
+.dl-badge{
+  border-radius:0;
+  transform:skew(-8deg);
+  background:rgba(255,255,255,.06);
+  min-width:168px;
+}
+.dl-badge>*{transform:skew(8deg);}
+.stats-row{gap:16px;}
+.stat-card{
+  min-height:132px;
+  padding:22px 26px;
+}
+.stat-card::after{
+  content:'';
+  position:absolute;
+  right:-26px;bottom:-38px;
+  width:110px;height:110px;
+  border:1px solid rgba(255,255,255,.045);
+  transform:rotate(18deg);
+}
+.stat-label{
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.stat-value{
+  font-family:'SF Mono',ui-monospace,monospace;
+  font-size:36px;
+  font-weight:950;
+  letter-spacing:-2px;
+}
+.stat-sub{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:1.1px;
+  text-transform:uppercase;
+}
+.lb-card{border-color:rgba(232,0,13,.24);}
+.lb-header{
+  background:linear-gradient(90deg, rgba(232,0,13,.12), rgba(0,0,0,.18));
+  padding:22px 22px 14px;
+}
+.lb-row{
+  padding:13px 18px;
+  background:linear-gradient(90deg, rgba(255,255,255,.018), transparent);
+}
+.rank{
+  min-width:34px;
+  width:34px;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.055);
+  color:#fff;
+  font-family:'SF Mono',ui-monospace,monospace;
+  font-size:18px;
+}
+.lb-row.gold .rank{background:rgba(255,214,10,.15);}
+.lb-row.silver .rank{background:rgba(142,142,147,.15);}
+.lb-row.bronze .rank{background:rgba(255,159,10,.15);}
+.lap-time,.weather-detail-val{
+  font-family:'SF Mono',ui-monospace,monospace;
+  font-weight:900;
+}
+.circuit-tab,.lb-tab,.filter-tab,.ghost-btn{
+  border-radius:5px;
+  font-weight:950;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+.circuit-tab.active,.lb-tab.active,.filter-tab.active{
+  color:#fff;
+  background:var(--accent);
+  box-shadow:0 0 18px var(--accent-glow);
+}
+.track-note{
+  border-radius:8px;
+  background:
+    linear-gradient(135deg, rgba(232,0,13,.08), transparent 42%),
+    rgba(0,0,0,.30);
+}
+.weather-temp{
+  font-family:'SF Mono',ui-monospace,monospace;
+  font-size:58px;
+  font-weight:950;
+}
+.weather-detail,.event-date{
+  border-radius:5px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.25);
+}
+.event-type,.track-status,.status-pill{
+  border-radius:3px;
+  text-transform:uppercase;
+}
+.auth-box{
+  border-radius:10px;
+  background:
+    linear-gradient(145deg, rgba(232,0,13,.12), transparent 36%),
+    rgba(6,6,8,.92);
+}
+@media(max-width:900px){
+  header{height:auto;min-height:62px;align-items:flex-start;padding:10px 14px;gap:10px;flex-wrap:wrap;}
+  nav{order:3;width:100%;overflow-x:auto;}
+  .nav-btn{height:42px;white-space:nowrap;}
+  .download-card{padding:26px 20px;display:block;}
+  .download-badges{margin-top:16px;flex-wrap:wrap;}
+  .product-tiers{grid-template-columns:1fr;}
+  .stat-value{font-size:28px;}
+}
+
+/* ── Light Race Calendar Theme ───────────────────────────────────────────────
+   Inspired by modern motorsport calendar/timing UI: white paddock surface,
+   black broadcast bars, red action accents, and compact squared typography. */
+:root{
+  --accent:#E50914;
+  --accent-dim:#B90009;
+  --accent-glow:rgba(229,9,20,.22);
+  --accent-soft:rgba(229,9,20,.08);
+  --secondary:#111820;
+  --bg:#F3F3F4;
+  --bg2:#FFFFFF;
+  --bg3:#F7F7F8;
+  --bg4:#E9EAEC;
+  --card:#FFFFFF;
+  --card2:#FFFFFF;
+  --border:rgba(17,24,32,.085);
+  --border2:rgba(17,24,32,.18);
+  --text:#0A0A0B;
+  --muted:rgba(10,10,11,.48);
+  --muted2:rgba(10,10,11,.64);
+  --text-dim:rgba(10,10,11,.44);
+  --grid-line:rgba(17,24,32,.035);
+  --radius-card:12px;
+  --radius-pill:999px;
+  --shadow-card:0 10px 28px rgba(17,24,32,.055);
+  --shadow-card-hover:0 18px 44px rgba(17,24,32,.12);
+  --orange:var(--accent);
+  --orange-dim:var(--accent-dim);
+  --orange-glow:var(--accent-glow);
+  --orange-soft:var(--accent-soft);
+  --orange-light:#FF303A;
+}
+body,
+body.theme-magneti,
+body.theme-pitwall,
+body.theme-yamaha{
+  --accent:#E50914;
+  --accent-dim:#B90009;
+  --accent-glow:rgba(229,9,20,.22);
+  --accent-soft:rgba(229,9,20,.08);
+  --secondary:#111820;
+  --bg:#F3F3F4;
+  --bg2:#FFFFFF;
+  --bg3:#F7F7F8;
+  --bg4:#E9EAEC;
+  --card2:#FFFFFF;
+  --border:rgba(17,24,32,.085);
+  --border2:rgba(17,24,32,.18);
+  --grid-line:rgba(17,24,32,.035);
+}
+body{
+  font-family:'Rajdhani','Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+  background:
+    radial-gradient(circle at 80% -10%, rgba(0,0,0,.05), transparent 30%),
+    linear-gradient(135deg, transparent 0 52%, rgba(0,0,0,.018) 52% 53%, transparent 53%),
+    var(--bg);
+  color:var(--text);
+}
+body::before{display:none;}
+body::after{opacity:.42;background-size:96px 96px;}
+header{
+  height:72px;
+  background:#030303;
+  border-bottom:1px solid rgba(255,255,255,.16);
+  box-shadow:none;
+}
+.header-logo{min-width:260px;}
+.logo-icon{
+  width:38px;height:38px;
+  border-radius:8px;
+  transform:none;
+  background:var(--accent);
+  color:#fff;
+}
+.logo-text .brand{
+  color:var(--accent);
+  font-family:'Rajdhani',sans-serif;
+  font-size:10px;
+  letter-spacing:3px;
+}
+.logo-text .name{
+  color:#fff;
+  font-family:'Rajdhani',sans-serif;
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:.2px;
+}
+.nav-btn{
+  height:72px;
+  color:rgba(255,255,255,.58);
+  font-family:'Rajdhani',sans-serif;
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:.1px;
+  text-transform:none;
+  border-bottom:none;
+}
+.nav-btn:hover,.nav-btn.active{color:#fff;border-bottom-color:transparent;}
+.nav-btn.active::after{
+  left:12px;right:12px;bottom:0;height:4px;
+  background:var(--accent);
+  box-shadow:none;
+}
+.header-right{gap:10px;}
+.live-badge{
+  color:#35D66B;
+  background:rgba(53,214,107,.08);
+  border-color:rgba(53,214,107,.38);
+}
+.theme-switcher,.user-badge,.btn-logout{
+  background:#111;
+  border-color:rgba(255,255,255,.14);
+  color:#fff;
+  border-radius:6px;
+}
+.theme-switcher-label,.btn-logout{color:#fff;}
+.theme-dropdown{background:#fff;border-color:rgba(0,0,0,.10);box-shadow:0 18px 40px rgba(0,0,0,.16);}
+.theme-name{color:#111;}
+.theme-tag{color:rgba(0,0,0,.50);}
+.page{padding:28px 42px;background:transparent;}
+.section-title{
+  color:#1C2127;
+  font-family:'Rajdhani',sans-serif;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:.2px;
+}
+.section-title::before{
+  width:4px;height:24px;border-radius:2px;
+  background:var(--accent);
+  box-shadow:none;
+}
+.download-card,.stat-card,.track-map-card,.weather-card,.lb-card,.events-card,.sessions-preview,.info-card,.page-hero,.profile-header-card,.profile-edit-card,.profile-sessions-card,.submit-card{
+  background:#fff;
+  border:0;
+  border-radius:13px;
+  box-shadow:var(--shadow-card);
+  color:var(--text);
+}
+.download-card{
+  min-height:230px;
+  background:
+    linear-gradient(135deg, rgba(0,0,0,.04) 0 18%, transparent 18%),
+    #fff;
+  border-radius:16px;
+}
+.download-card::before{
+  background:
+    linear-gradient(135deg, transparent 0 68%, rgba(0,0,0,.055) 68% 69%, transparent 69%),
+    radial-gradient(circle at 100% 0%, rgba(229,9,20,.08), transparent 36%);
+}
+.download-card::after{
+  color:rgba(0,0,0,.035);
+  font-family:'Rajdhani',sans-serif;
+  font-size:92px;
+  font-weight:700;
+}
+.download-info h2{
+  color:#0A0A0B;
+  font-family:'Rajdhani',sans-serif!important;
+  font-size:40px;
+  font-weight:700!important;
+  letter-spacing:-.8px!important;
+}
+.download-info p{color:rgba(10,10,11,.58);font-size:18px;font-weight:600;}
+.race-chip{
+  font-family:'Rajdhani',sans-serif;
+  font-size:13px;
+  letter-spacing:.3px;
+  font-weight:700;
+  color:#222;
+  background:#F0F1F2;
+  border:0;
+  border-radius:999px;
+  padding:8px 14px;
+}
+.race-chip.live{
+  background:#111820;
+  color:#fff;
+}
+.race-chip.green{color:#0C7A36;background:rgba(48,209,88,.12);}
+.race-chip.cyan{color:#106A8D;background:rgba(100,210,255,.16);}
+.tier-card{
+  background:#F5F5F6;
+  border:1px solid rgba(0,0,0,.045);
+  border-radius:12px;
+}
+.tier-card.pro{
+  background:#fff;
+  border:1px solid rgba(229,9,20,.36);
+}
+.tier-name,.tier-pill,.tier-copy,.tier-price{
+  font-family:'Rajdhani',sans-serif;
+}
+.tier-name{color:#0A0A0B;font-size:16px;letter-spacing:.8px;}
+.tier-price{color:var(--accent);font-size:24px;}
+.tier-copy{color:rgba(10,10,11,.56);font-size:14px;font-weight:600;}
+.tier-pill{
+  background:#ECEDEF;
+  border:0;
+  color:#555;
+  border-radius:999px;
+  font-size:11px;
+}
+.tier-card.pro .tier-pill{background:var(--accent);color:#fff;border:0;}
+.dl-badge{
+  transform:none;
+  border:0;
+  background:#111820;
+  border-radius:4px;
+}
+.dl-badge>*{transform:none;}
+.dl-badge-name{font-family:'Rajdhani',sans-serif;font-size:20px;color:#fff;}
+.dl-badge-sub{color:rgba(255,255,255,.58);font-family:'Rajdhani',sans-serif;}
+.stat-card{
+  min-height:126px;
+  background:#fff;
+}
+.stat-card::before{display:none;}
+.stat-card::after{
+  border-color:rgba(0,0,0,.045);
+}
+.stat-label{
+  color:rgba(10,10,11,.54);
+  font-family:'Rajdhani',sans-serif;
+  font-size:15px;
+  letter-spacing:.2px;
+}
+.stat-value{
+  color:#111820;
+  font-family:'Rajdhani',sans-serif;
+  font-size:42px;
+  letter-spacing:-.8px;
+}
+.stat-value.orange{color:var(--accent);}
+.stat-value.cyan{color:#2B85A9;}
+.stat-value.green{color:#168B44;}
+.stat-sub{
+  color:rgba(10,10,11,.42);
+  font-family:'Rajdhani',sans-serif;
+  font-size:13px;
+  letter-spacing:.2px;
+}
+.circuit-tab,.lb-tab,.filter-tab,.ghost-btn{
+  background:#F0F1F2;
+  color:#3B4148;
+  border:0;
+  border-radius:999px;
+  font-family:'Rajdhani',sans-serif;
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:.1px;
+  text-transform:none;
+}
+.circuit-tab.active,.lb-tab.active,.filter-tab.active{
+  color:#fff;
+  background:#111820;
+  box-shadow:none;
+}
+.track-note{
+  background:#F6F6F7;
+  border:0;
+  color:var(--text);
+}
+.track-note-title,.info-value,.driver-name,.event-title{color:#0A0A0B;font-family:'Rajdhani',sans-serif;}
+.track-note-meta,.track-note-body,.track-note-foot,.driver-meta,.event-meta,.info-sub{color:rgba(10,10,11,.55);}
+.weather-temp,.weather-detail-val,.lap-time{
+  color:#111820;
+  font-family:'Rajdhani',sans-serif;
+}
+.weather-location{color:var(--accent);font-family:'Rajdhani',sans-serif;}
+.weather-condition{color:rgba(10,10,11,.60);}
+.weather-detail,.event-date{
+  background:#F4F5F6;
+  border:0;
+  border-radius:10px;
+}
+.weather-detail-label{color:rgba(10,10,11,.46);font-family:'Rajdhani',sans-serif;}
+.lb-card{background:#fff;}
+.lb-header{
+  background:#111820;
+  border-bottom:0;
+}
+.lb-header .section-title{color:#fff;}
+.lb-body{background:#fff;}
+.lb-row{
+  background:#fff;
+  border-bottom:1px solid rgba(17,24,32,.07);
+}
+.lb-row:hover{background:#F5F5F6;}
+.rank{
+  background:#111820;
+  color:#fff;
+  border-radius:4px;
+  font-family:'Rajdhani',sans-serif;
+}
+.lb-row.mine{background:rgba(229,9,20,.055);border-left:4px solid var(--accent);}
+.delta{color:rgba(10,10,11,.42);font-family:'Rajdhani',sans-serif;}
+.event-day{color:var(--accent);font-family:'Rajdhani',sans-serif;font-size:28px;}
+.event-type,.track-status,.status-pill{
+  border-radius:999px;
+  font-family:'Rajdhani',sans-serif;
+}
+.profile-name,.p-stat-value,.page-title{
+  color:#0A0A0B;
+  font-family:'Rajdhani',sans-serif;
+}
+.profile-email,.p-stat-label,.page-copy,.input-hint{color:rgba(10,10,11,.55);}
+.auth-box{
+  background:#fff;
+  color:#111;
+}
+.auth-logo h1{color:#111;font-family:'Rajdhani',sans-serif;}
+.auth-logo p,.auth-tab{color:rgba(10,10,11,.55);font-family:'Rajdhani',sans-serif;}
+.form-group label,.form-group input,.btn-primary{font-family:'Rajdhani',sans-serif;}
+.form-group input{background:#F5F5F6;color:#111;border-color:rgba(0,0,0,.08);}
+.empty-text{color:rgba(10,10,11,.45);font-family:'Rajdhani',sans-serif;}
+@media(max-width:900px){
+  header{background:#030303;}
+  .header-logo{min-width:auto;}
+  .download-info h2{font-size:34px;}
+  .download-info p{font-size:15px;}
+}
+
+/* ── Final Race Calendar Polish ──────────────────────────────────────────────
+   Keep this block last. It normalizes the earlier dark/dashboard layers into a
+   clean motorsport calendar style: black broadcast header, white paddock cards,
+   red timing accents, and compact technical typography. */
+body.theme-magneti{
+  --accent:#00A86B;
+  --accent-dim:#007D50;
+  --accent-glow:rgba(0,168,107,.20);
+  --accent-soft:rgba(0,168,107,.08);
+}
+body.theme-pitwall{
+  --accent:#E50914;
+  --accent-dim:#B90009;
+  --accent-glow:rgba(229,9,20,.22);
+  --accent-soft:rgba(229,9,20,.08);
+}
+body.theme-yamaha{
+  --accent:#1D62D1;
+  --accent-dim:#164AA0;
+  --accent-glow:rgba(29,98,209,.20);
+  --accent-soft:rgba(29,98,209,.08);
+}
+body{
+  background:
+    linear-gradient(180deg,#ffffff 0,#f4f4f5 240px,#eeeeef 100%),
+    var(--bg);
+}
+body::after{
+  background-image:
+    linear-gradient(rgba(17,24,32,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(17,24,32,.025) 1px,transparent 1px);
+  background-size:72px 72px;
+}
+header{
+  padding:0 30px;
+  gap:24px;
+}
+.header-logo{
+  min-width:280px;
+}
+.logo-icon{
+  width:42px;
+  height:42px;
+  border-radius:10px;
+  font-family:'Rajdhani',sans-serif;
+  font-size:18px;
+}
+.logo-text .brand{
+  line-height:1;
+}
+.logo-text .name{
+  line-height:1;
+  margin-top:2px;
+}
+nav{
+  flex:1;
+  justify-content:center;
+}
+.nav-btn{
+  padding:0 18px;
+}
+.page{
+  padding:34px 42px;
+}
+.dash-grid{
+  gap:22px;
+}
+.download-card{
+  min-height:270px;
+  border:1px solid rgba(17,24,32,.06);
+}
+.download-info h2{
+  font-size:46px!important;
+  line-height:.95;
+}
+.download-info p{
+  max-width:960px;
+}
+.product-tiers{
+  max-width:780px;
+}
+.tier-card{
+  box-shadow:none;
+}
+.dl-badge{
+  align-self:flex-start;
+  min-width:180px;
+  padding:14px 18px;
+  clip-path:polygon(0 0,100% 0,92% 100%,0 100%);
+}
+.section-title{
+  margin-bottom:0;
+  text-transform:uppercase;
+}
+#page-dashboard [style*="grid-area:lbl"] span{
+  font-family:'Rajdhani',sans-serif!important;
+  color:#1c2127!important;
+  font-size:17px!important;
+  font-weight:700!important;
+  letter-spacing:.2px!important;
+}
+#page-dashboard [style*="grid-area:lbl"] > div:first-child{
+  width:4px!important;
+  height:24px!important;
+  background:var(--accent)!important;
+  border-radius:2px!important;
+}
+.stat-card{
+  border:1px solid rgba(17,24,32,.055);
+}
+.track-map-card,.weather-card,.events-card,.sessions-preview{
+  padding:30px;
+}
+.circuit-tabs,.lb-tabs,.lb-full-filters{
+  gap:10px;
+}
+.circuit-tab,.lb-tab,.filter-tab{
+  padding:10px 18px;
+}
+.track-note-title{
+  font-size:28px;
+}
+.track-note-meta{
+  font-family:'Rajdhani',sans-serif;
+  font-size:15px;
+  letter-spacing:.2px;
+}
+.track-note-body,.track-note-foot{
+  font-family:'Rajdhani',sans-serif;
+  font-size:16px;
+  font-weight:600;
+}
+.weather-card{
+  background:
+    linear-gradient(145deg,rgba(229,9,20,.035),transparent 34%),
+    #fff;
+}
+.weather-location{
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:1px;
+}
+.lb-header{
+  border-radius:13px 13px 0 0;
+}
+.lb-tab{
+  font-size:13px;
+  padding:8px 10px;
+}
+.lb-row{
+  padding:15px 18px;
+}
+.driver-name{
+  font-size:17px;
+}
+.driver-meta,.delta{
+  font-size:13px;
+}
+.lap-time{
+  font-size:18px;
+  font-weight:700;
+}
+.event-row{
+  padding:18px 0;
+}
+.event-date{
+  min-width:70px;
+}
+.event-title{
+  font-size:19px;
+  font-weight:700;
+}
+.event-meta{
+  font-family:'Rajdhani',sans-serif;
+  font-size:15px;
+  font-weight:600;
+}
+.event-type{
+  background:#111820;
+  border:0!important;
+  color:#fff!important;
+  font-family:'Rajdhani',sans-serif;
+  font-size:13px;
+  padding:6px 13px;
+}
+.theme-switcher{
+  min-width:110px;
+  justify-content:center;
+}
+.btn-logout{
+  padding:9px 14px;
+}
+.lb-full-table,.mini-table{
+  background:#fff;
+  border:0;
+  box-shadow:var(--shadow-card);
+}
+.lb-full-header{
+  background:#111820;
+  color:#fff;
+  font-family:'Rajdhani',sans-serif;
+  font-size:14px;
+}
+.lb-full-row,.mini-row{
+  background:#fff;
+  border-bottom:1px solid rgba(17,24,32,.07);
+  font-family:'Rajdhani',sans-serif;
+  font-size:16px;
+}
+.form-inline input,.form-inline select,.form-select,#import-file{
+  background:#fff!important;
+  color:#111820!important;
+  border:1px solid rgba(17,24,32,.12)!important;
+  font-family:'Rajdhani',sans-serif!important;
+  font-size:16px!important;
+}
+.feature-card{
+  background:#fff!important;
+  border:1px solid rgba(17,24,32,.07)!important;
+  color:#111820;
+}
+.feature-card [style*="background:rgba(255,255,255,0.03)"]{
+  background:#f4f5f6!important;
+}
+@media(max-width:1100px){
+  header{padding:10px 18px;height:auto;flex-wrap:wrap;}
+  nav{order:3;width:100%;justify-content:flex-start;overflow-x:auto;}
+  .nav-btn{height:46px;padding:0 14px;}
+  .header-right{margin-left:auto;}
+}
+@media(max-width:760px){
+  .page{padding:22px 16px!important;}
+  .stats-row{grid-template-columns:1fr;}
+  .download-info h2{font-size:38px!important;}
+  .download-badges{flex-direction:column;}
+  .dl-badge{width:100%;}
+  .circuit-tabs,.lb-tabs,.lb-full-filters{overflow-x:auto;flex-wrap:nowrap;}
+  .circuit-tab,.lb-tab,.filter-tab{white-space:nowrap;}
+}
+
+/* ── Restore Original Dark Theme Selector Behavior ───────────────────────────
+   The MotoGP calendar treatment above is now just one selectable theme. All
+   other options return to the earlier dark dashboard look with distinct colors. */
+body.theme-ducati{
+  --accent:#E8000D; --accent-dim:#B0000A;
+  --accent-glow:rgba(232,0,13,0.18); --accent-soft:rgba(232,0,13,0.12);
+  --secondary:#FFB800;
+  --bg:#120000; --bg2:#0F0000; --bg3:#180000; --bg4:#200505;
+  --card2:rgba(30,5,5,0.88);
+  --border:rgba(232,0,13,0.10); --border2:rgba(232,0,13,0.24);
+  --text:#F5F5F7; --muted:rgba(255,255,255,0.42); --muted2:rgba(255,255,255,0.62); --text-dim:rgba(255,255,255,0.45);
+  --grid-line:rgba(232,0,13,0.04);
+}
+body.theme-magneti{
+  --accent:#00FF88; --accent-dim:#00CC6A;
+  --accent-glow:rgba(0,255,136,0.16); --accent-soft:rgba(0,255,136,0.10);
+  --secondary:#00B4FF;
+  --bg:#0A0A0A; --bg2:#080808; --bg3:#0F0F0F; --bg4:#161616;
+  --card2:rgba(15,26,18,0.88);
+  --border:rgba(0,255,136,0.08); --border2:rgba(0,255,136,0.22);
+  --text:#F5F5F7; --muted:rgba(255,255,255,0.42); --muted2:rgba(255,255,255,0.62); --text-dim:rgba(255,255,255,0.45);
+  --grid-line:rgba(0,255,136,0.03);
+}
+body.theme-pitwall{
+  --accent:#FF3B00; --accent-dim:#CC2F00;
+  --accent-glow:rgba(255,59,0,0.18); --accent-soft:rgba(255,59,0,0.10);
+  --secondary:#00CFFF;
+  --bg:#0D0D1A; --bg2:#0A0A16; --bg3:#131320; --bg4:#1A1A28;
+  --card2:rgba(18,18,31,0.88);
+  --border:rgba(0,207,255,0.08); --border2:rgba(0,207,255,0.22);
+  --text:#F5F5F7; --muted:rgba(255,255,255,0.42); --muted2:rgba(255,255,255,0.62); --text-dim:rgba(255,255,255,0.45);
+  --grid-line:rgba(0,207,255,0.03);
+}
+body.theme-yamaha{
+  --accent:#1E6FD9; --accent-dim:#155AB0;
+  --accent-glow:rgba(30,111,217,0.20); --accent-soft:rgba(30,111,217,0.10);
+  --secondary:#BFD0E8;
+  --bg:#0A0F1A; --bg2:#080C16; --bg3:#101825; --bg4:#18243A;
+  --card2:rgba(16,24,37,0.88);
+  --border:rgba(30,111,217,0.10); --border2:rgba(30,111,217,0.24);
+  --text:#F5F5F7; --muted:rgba(255,255,255,0.42); --muted2:rgba(255,255,255,0.62); --text-dim:rgba(255,255,255,0.45);
+  --grid-line:rgba(30,111,217,0.04);
+}
+body:not(.theme-motogp){
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, var(--accent-glow), transparent 34%),
+    linear-gradient(135deg, var(--accent-soft) 0 13%, transparent 13% 48%, rgba(255,255,255,0.018) 48% 49%, transparent 49%),
+    var(--bg)!important;
+  color:var(--text);
+}
+body:not(.theme-motogp)::before{display:block;}
+body:not(.theme-motogp)::after{
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:80px 80px;
+  opacity:1;
+}
+body:not(.theme-motogp) header{
+  height:62px;
+  background:rgba(0,0,0,0.50);
+  border-bottom:1px solid var(--border2);
+  box-shadow:0 10px 32px rgba(0,0,0,.38);
+}
+body:not(.theme-motogp) .logo-text .name,
+body:not(.theme-motogp) .download-info h2,
+body:not(.theme-motogp) .track-note-title,
+body:not(.theme-motogp) .info-value,
+body:not(.theme-motogp) .driver-name,
+body:not(.theme-motogp) .event-title,
+body:not(.theme-motogp) .profile-name,
+body:not(.theme-motogp) .p-stat-value,
+body:not(.theme-motogp) .page-title{
+  color:#fff;
+}
+body:not(.theme-motogp) .download-card,
+body:not(.theme-motogp) .stat-card,
+body:not(.theme-motogp) .track-map-card,
+body:not(.theme-motogp) .weather-card,
+body:not(.theme-motogp) .lb-card,
+body:not(.theme-motogp) .events-card,
+body:not(.theme-motogp) .sessions-preview,
+body:not(.theme-motogp) .info-card,
+body:not(.theme-motogp) .page-hero,
+body:not(.theme-motogp) .profile-header-card,
+body:not(.theme-motogp) .profile-edit-card,
+body:not(.theme-motogp) .profile-sessions-card,
+body:not(.theme-motogp) .submit-card{
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.055), transparent 26%),
+    var(--card2)!important;
+  border:1px solid var(--border2)!important;
+  color:var(--text);
+}
+body:not(.theme-motogp) .download-info p,
+body:not(.theme-motogp) .track-note-meta,
+body:not(.theme-motogp) .track-note-body,
+body:not(.theme-motogp) .track-note-foot,
+body:not(.theme-motogp) .driver-meta,
+body:not(.theme-motogp) .event-meta,
+body:not(.theme-motogp) .info-sub,
+body:not(.theme-motogp) .profile-email,
+body:not(.theme-motogp) .p-stat-label,
+body:not(.theme-motogp) .page-copy,
+body:not(.theme-motogp) .input-hint{
+  color:var(--muted2);
+}
+body:not(.theme-motogp) .section-title,
+body:not(.theme-motogp) #page-dashboard [style*="grid-area:lbl"] span{
+  color:var(--muted2)!important;
+  font-family:'Inter',sans-serif!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  letter-spacing:1.8px!important;
+}
+body:not(.theme-motogp) .stat-value,
+body:not(.theme-motogp) .weather-temp,
+body:not(.theme-motogp) .weather-detail-val,
+body:not(.theme-motogp) .lap-time{
+  color:var(--text);
+}
+body:not(.theme-motogp) .stat-value.orange,
+body:not(.theme-motogp) .event-day,
+body:not(.theme-motogp) .weather-location,
+body:not(.theme-motogp) .tier-price{
+  color:var(--accent);
+}
+body:not(.theme-motogp) .circuit-tab,
+body:not(.theme-motogp) .lb-tab,
+body:not(.theme-motogp) .filter-tab,
+body:not(.theme-motogp) .ghost-btn,
+body:not(.theme-motogp) .weather-detail,
+body:not(.theme-motogp) .event-date,
+body:not(.theme-motogp) .track-note,
+body:not(.theme-motogp) .tier-card{
+  background:rgba(255,255,255,0.045);
+  border:1px solid var(--border2);
+  color:var(--muted2);
+}
+body:not(.theme-motogp) .circuit-tab.active,
+body:not(.theme-motogp) .lb-tab.active,
+body:not(.theme-motogp) .filter-tab.active{
+  color:#fff;
+  background:var(--accent);
+  border-color:var(--accent);
+}
+body:not(.theme-motogp) .lb-header{
+  background:linear-gradient(90deg,var(--accent-soft),rgba(0,0,0,.18));
+}
+body:not(.theme-motogp) .lb-row,
+body:not(.theme-motogp) .lb-body,
+body:not(.theme-motogp) .lb-full-row,
+body:not(.theme-motogp) .mini-row{
+  background:transparent;
+  border-bottom:1px solid var(--border);
+}
+body:not(.theme-motogp) .lb-full-header{
+  background:rgba(255,255,255,0.06);
+  color:var(--muted2);
+}
+body:not(.theme-motogp) .theme-dropdown{
+  background:var(--bg3);
+  border-color:var(--border2);
+}
+body:not(.theme-motogp) .theme-name{color:var(--text);}
+body:not(.theme-motogp) .theme-tag{color:var(--muted);}
+body:not(.theme-motogp) .form-inline input,
+body:not(.theme-motogp) .form-inline select,
+body:not(.theme-motogp) .form-select,
+body:not(.theme-motogp) #import-file{
+  background:rgba(255,255,255,0.05)!important;
+  color:var(--text)!important;
+  border:1px solid var(--border2)!important;
+}
+
+/* Dashboard leaderboard: keep controls inside the sidebar at every width. */
+.lb-card .lb-header{
+  padding:22px 22px 18px;
+}
+.lb-card .lb-tabs{
+  width:100%;
+}
+.lb-card .lb-tabs-circuits{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(54px,1fr));
+  gap:8px;
+}
+.lb-card .lb-tabs-category{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.lb-card .lb-tab{
+  min-width:0;
+  width:100%;
+  flex:none;
+  padding:9px 6px;
+  font-size:13px;
+  line-height:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.theme-motogp .lb-card .lb-tab{
+  border-radius:18px;
+}
+body.theme-motogp .lb-card .lb-tabs-circuits .lb-tab{
+  padding:10px 5px;
+}
+body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
+  min-height:42px;
+}
+@media(max-width:1200px){
+  .lb-card .lb-tabs-circuits{
+    grid-template-columns:repeat(auto-fit,minmax(48px,1fr));
+  }
+  .lb-card .lb-tab{
+    font-size:12px;
+  }
+}
 
 </style>
 </head>
@@ -508,8 +1587,8 @@ nav{display:flex;gap:2px;}
     <div class="auth-corner br"></div>
     <div class="auth-box">
       <div class="auth-logo">
-        <div class="brand">AKSYS CORPORATION</div>
-        <h1 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-2px;">LAP<span>PRO</span></h1>
+        <div class="brand">AKSYS</div>
+        <h1 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-2px;">LAP<span>TIMER</span></h1>
         <p>GPS LAP TIMER · PHILIPPINE MOTORSPORT</p>
       </div>
       <div class="auth-tabs">
@@ -543,17 +1622,20 @@ nav{display:flex;gap:2px;}
 <div id="app">
   <header>
     <div class="header-logo">
-      <div class="logo-icon">AL</div>
+      <div class="logo-icon">AK</div>
       <div class="logo-text">
-        <div class="brand">AKSYS CORPORATION</div>
-        <div class="name">LapPro</div>
+        <div class="brand">AKSYS</div>
+        <div class="name">LapTimer</div>
       </div>
     </div>
     <nav>
       <button class="nav-btn active" onclick="showPage('dashboard')">DASHBOARD</button>
       <button class="nav-btn" onclick="showPage('leaderboard')">LEADERBOARD</button>
       <button class="nav-btn" onclick="showPage('circuits')">CIRCUITS</button>
-    <button class="nav-btn" onclick="showPage('features')">FEATURES</button>
+      <button class="nav-btn" onclick="showPage('live')">PIT WALL</button>
+      <button class="nav-btn" onclick="showPage('upload')">IMPORT</button>
+      <button class="nav-btn" onclick="showPage('admin')">ADMIN</button>
+      <button class="nav-btn" onclick="showPage('features')">FEATURES</button>
       <button class="nav-btn" onclick="showPage('profile')">PROFILE</button>
       
     </nav>
@@ -561,12 +1643,12 @@ nav{display:flex;gap:2px;}
       <div class="live-badge"><div class="live-dot"></div>LIVE</div>
 
       <!-- Theme Switcher -->
-      <div class="theme-switcher">
+      <div class="theme-switcher" id="theme-switcher" onclick="toggleThemeMenu(event)" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
         <div class="theme-dot"></div>
         <span class="theme-switcher-label" id="active-theme-label">DUCATI</span>
         <span style="color:var(--muted);font-size:9px;">▾</span>
         <div class="theme-dropdown">
-          <div class="theme-option active" id="opt-ducati" onclick="setTheme('ducati')">
+          <div class="theme-option active" id="opt-ducati" onclick="chooseTheme(event,'ducati')">
             <div class="theme-swatches">
               <div class="theme-swatch" style="background:#120000;border:1px solid rgba(255,255,255,0.2)"></div>
               <div class="theme-swatch" style="background:#E8000D"></div>
@@ -575,7 +1657,7 @@ nav{display:flex;gap:2px;}
             <div><div class="theme-name">Ducati Factory</div><div class="theme-tag">BORGO PANIGALE</div></div>
             <span class="theme-check" id="check-ducati"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
-          <div class="theme-option" id="opt-magneti" onclick="setTheme('magneti')">
+          <div class="theme-option" id="opt-magneti" onclick="chooseTheme(event,'magneti')">
             <div class="theme-swatches">
               <div class="theme-swatch" style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.2)"></div>
               <div class="theme-swatch" style="background:#00FF88"></div>
@@ -584,7 +1666,7 @@ nav{display:flex;gap:2px;}
             <div><div class="theme-name">Magneti Marelli</div><div class="theme-tag">CLASSIC ECU</div></div>
             <span class="theme-check" id="check-magneti" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
-          <div class="theme-option" id="opt-pitwall" onclick="setTheme('pitwall')">
+          <div class="theme-option" id="opt-pitwall" onclick="chooseTheme(event,'pitwall')">
             <div class="theme-swatches">
               <div class="theme-swatch" style="background:#0D0D1A;border:1px solid rgba(255,255,255,0.2)"></div>
               <div class="theme-swatch" style="background:#FF3B00"></div>
@@ -593,7 +1675,7 @@ nav{display:flex;gap:2px;}
             <div><div class="theme-name">Pit Wall</div><div class="theme-tag">MOTOGP BROADCAST</div></div>
             <span class="theme-check" id="check-pitwall" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
-          <div class="theme-option" id="opt-yamaha" onclick="setTheme('yamaha')">
+          <div class="theme-option" id="opt-yamaha" onclick="chooseTheme(event,'yamaha')">
             <div class="theme-swatches">
               <div class="theme-swatch" style="background:#0A0F1A;border:1px solid rgba(255,255,255,0.2)"></div>
               <div class="theme-swatch" style="background:#1E6FD9"></div>
@@ -601,6 +1683,15 @@ nav{display:flex;gap:2px;}
             </div>
             <div><div class="theme-name">Yamaha M1</div><div class="theme-tag">IWATA FACTORY</div></div>
             <span class="theme-check" id="check-yamaha" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
+          </div>
+          <div class="theme-option" id="opt-motogp" onclick="chooseTheme(event,'motogp')">
+            <div class="theme-swatches">
+              <div class="theme-swatch" style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.2)"></div>
+              <div class="theme-swatch" style="background:#030303"></div>
+              <div class="theme-swatch" style="background:#E50914"></div>
+            </div>
+            <div><div class="theme-name">MotoGP Grid</div><div class="theme-tag">LIGHT CALENDAR</div></div>
+            <span class="theme-check" id="check-motogp" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
           </div>
         </div>
       </div>
@@ -620,12 +1711,32 @@ nav{display:flex;gap:2px;}
       <!-- Download Banner -->
       <div class="download-card">
         <div class="download-info">
+          <div class="motogp-strip">
+            <span class="race-chip live">Live Timing</span>
+            <span class="race-chip green">Pit Wall</span>
+            <span class="race-chip cyan">Sector Data</span>
+            <span class="race-chip">PH Circuits</span>
+          </div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <h2 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px;">AKSYS LapPro</h2>
+            <h2 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px;">AKSYS LapTimer</h2>
             <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:var(--radius-pill);display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#00E676;"></span>NOW LIVE</span>
             <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:var(--radius-pill);">🇵🇭 ₱999 · PH ONLY</span>
           </div>
-          <p>Professional GPS lap timing for Philippine motorsport — now with live telemetry, Apple HealthKit heart rate monitoring, braking analysis, real-time pit wall, and always-on Watch screen.</p>
+          <p>Professional GPS lap timing for Philippine motorsport — base timing for every rider, with a Pro tier for teams that need live pit wall and deeper telemetry.</p>
+          <div class="product-tiers">
+            <div class="tier-card">
+              <div class="tier-pill">BASE APP</div>
+              <div class="tier-name">AKSYS LapTimer</div>
+              <div class="tier-price">₱999 one-time</div>
+              <div class="tier-copy">iPhone + Apple Watch lap timing, Philippine track auto-detect, GPS route logging, Test Mode, session history, and official app-recorded leaderboard uploads.</div>
+            </div>
+            <div class="tier-card pro">
+              <div class="tier-pill">PRO TIER</div>
+              <div class="tier-name">AKSYS LapTimer Pro</div>
+              <div class="tier-price">Planned subscription</div>
+              <div class="tier-copy">Live pit wall, paddock sharing, cloud backup, advanced telemetry analysis, import center, team tools, and unlimited exports. StoreKit pricing will be enabled before launch.</div>
+            </div>
+          </div>
         </div>
         <div class="download-badges">
           <a class="dl-badge" href="https://apps.apple.com/ph/app/aksys-laptimer/id6770492272" target="_blank">
@@ -704,6 +1815,10 @@ nav{display:flex;gap:2px;}
           <div class="circuit-tab active" onclick="switchCircuit('CIS',this)">CIS</div>
           <div class="circuit-tab" onclick="switchCircuit('BRC',this)">BRC</div>
           <div class="circuit-tab" onclick="switchCircuit('CRT',this)">CRT</div>
+          <div class="circuit-tab" onclick="switchCircuit('CISK',this)">CISK</div>
+          <div class="circuit-tab" onclick="switchCircuit('CKRP',this)">CKRP</div>
+          <div class="circuit-tab" onclick="switchCircuit('CKT',this)">CKT</div>
+          <div class="circuit-tab" onclick="switchCircuit('TAR',this)">TAR</div>
         </div>
         <div class="track-svg-wrap" id="track-svg-wrap">
           <!-- CIS SVG injected by JS -->
@@ -754,12 +1869,16 @@ nav{display:flex;gap:2px;}
         <div class="lb-header">
           <div class="section-title">LEADERBOARD</div>
             <div style="font-size:9px;color:var(--green);letter-spacing:1px;font-weight:700;padding:3px 8px;border:1px solid rgba(0,230,118,0.3);display:inline-flex;align-items:center;gap:4px;"><svg class="icon"><use href="#icon-check"/></svg>VERIFIED</div>
-          <div class="lb-tabs">
+          <div class="lb-tabs lb-tabs-circuits">
             <div class="lb-tab active" onclick="switchLbCircuit('Clark International Speedway',this,'dash')">CIS</div>
             <div class="lb-tab" onclick="switchLbCircuit('Batangas Racing Circuit',this,'dash')">BRC</div>
             <div class="lb-tab" onclick="switchLbCircuit('Carmona Race Track',this,'dash')">CRT</div>
+            <div class="lb-tab" onclick="switchLbCircuit('Clark International Speedway Kart Track',this,'dash')">CISK</div>
+            <div class="lb-tab" onclick="switchLbCircuit('City Kart Racing Pampanga',this,'dash')">CKRP</div>
+            <div class="lb-tab" onclick="switchLbCircuit('Cebu Kartzone Track',this,'dash')">CKT</div>
+            <div class="lb-tab" onclick="switchLbCircuit('Tarlac Circuit Hill',this,'dash')">TAR</div>
           </div>
-          <div class="lb-tabs" style="margin-top:6px;">
+          <div class="lb-tabs lb-tabs-category" style="margin-top:6px;">
             <div class="lb-tab active" onclick="switchLbCategory('Motorcycle',this,'dash')" style="display:flex;align-items:center;justify-content:center;gap:4px;"><svg class="icon"><use href="#icon-bike"/></svg>MOTO</div>
             <div class="lb-tab" onclick="switchLbCategory('Car',this,'dash')" style="display:flex;align-items:center;justify-content:center;gap:4px;"><svg class="icon"><use href="#icon-car"/></svg>CAR</div>
           </div>
@@ -830,10 +1949,30 @@ nav{display:flex;gap:2px;}
         <div class="filter-tab active" onclick="switchLbCircuit('Clark International Speedway',this,'full')">CLARK INT'L SPEEDWAY</div>
         <div class="filter-tab" onclick="switchLbCircuit('Batangas Racing Circuit',this,'full')">BATANGAS RACING CIRCUIT</div>
         <div class="filter-tab" onclick="switchLbCircuit('Carmona Race Track',this,'full')">CARMONA RACE TRACK</div>
+        <div class="filter-tab" onclick="switchLbCircuit('Clark International Speedway Kart Track',this,'full')">CIS KART TRACK</div>
+        <div class="filter-tab" onclick="switchLbCircuit('City Kart Racing Pampanga',this,'full')">CITY KART RACING PAMPANGA</div>
+        <div class="filter-tab" onclick="switchLbCircuit('Cebu Kartzone Track',this,'full')">CEBU KARTZONE</div>
+        <div class="filter-tab" onclick="switchLbCircuit('Tarlac Circuit Hill',this,'full')">TARLAC CIRCUIT HILL</div>
       </div>
       <div class="lb-full-filters" style="margin-top:8px;">
         <div class="filter-tab active" onclick="switchLbCategory('Motorcycle',this,'full')" style="display:flex;align-items:center;justify-content:center;gap:5px;"><svg class="icon"><use href="#icon-bike"/></svg>MOTORCYCLE</div>
         <div class="filter-tab" onclick="switchLbCategory('Car',this,'full')" style="display:flex;align-items:center;justify-content:center;gap:5px;"><svg class="icon"><use href="#icon-car"/></svg>CAR</div>
+      </div>
+      <div class="form-inline">
+        <input id="lb-search" placeholder="Search rider or vehicle" oninput="loadFullLeaderboard(currentFullCircuit,currentFullCategory)">
+        <select id="lb-date-filter" onchange="loadFullLeaderboard(currentFullCircuit,currentFullCategory)">
+          <option value="all">All dates</option>
+          <option value="today">Today</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+        <select id="lb-session-filter" onchange="loadFullLeaderboard(currentFullCircuit,currentFullCategory)">
+          <option value="all">All session types</option>
+          <option value="practice">Practice</option>
+          <option value="qualifying">Qualifying</option>
+          <option value="race">Race</option>
+          <option value="trackday">Trackday</option>
+        </select>
       </div>
       <div class="lb-full-table">
         <div class="lb-full-header">
@@ -856,12 +1995,128 @@ nav{display:flex;gap:2px;}
     </div>
   </div>
 
+  <!-- LIVE PIT WALL PAGE -->
+  <div id="page-live" class="page">
+    <div class="page-wrap">
+      <div class="page-hero">
+        <div class="page-kicker">LIVE SESSION</div>
+        <div class="page-title">Pit Wall</div>
+        <p class="page-copy">Watch active riders from the paddock. Data comes from Apple Watch/iPhone sync to Firestore liveSessions, then updates here in near real time.</p>
+      </div>
+      <div class="info-grid" id="live-pit-grid">
+        <div class="empty-state"><div class="empty-text">WAITING FOR ACTIVE RIDERS</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD / IMPORT CENTER PAGE -->
+  <div id="page-upload" class="page">
+    <div class="page-wrap">
+      <div class="page-hero">
+        <div class="page-kicker">IMPORT CENTER</div>
+        <div class="page-title">Upload & Import Sessions</div>
+        <p class="page-copy">Use the iOS app for verified uploads. This page prepares the website workflow for AKSYS exports, third-party lap timer DB files, CSV, and GPX imports.</p>
+      </div>
+      <div class="split-grid">
+        <div class="info-card">
+          <div class="info-label">Supported Sources</div>
+          <div class="info-sub">Import AKSYS CSV/GPX exports or third-party SQLite lap timer DB files directly in the browser. Imported rows are tagged so official app laps and imported laps remain traceable.</div>
+          <div style="margin-top:14px;">
+            <input type="file" id="import-file" accept=".csv,.gpx,.db" onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
+          </div>
+          <div class="form-inline" style="margin-top:12px;">
+            <select id="import-circuit">
+              <option>Clark International Speedway</option>
+              <option>Batangas Racing Circuit</option>
+              <option>Carmona Race Track</option>
+              <option>Clark International Speedway Kart Track</option>
+              <option>City Kart Racing Pampanga</option>
+              <option>Cebu Kartzone Track</option>
+              <option>Tarlac Circuit Hill</option>
+            </select>
+            <select id="import-vehicle-type"><option>Motorcycle</option><option>Car</option></select>
+            <input id="import-vehicle" placeholder="Vehicle model">
+          </div>
+          <div class="action-row" style="margin-top:10px;">
+            <button class="ghost-btn" onclick="uploadImportedLaps()">UPLOAD IMPORTED LAPS</button>
+            <span id="import-status" class="status-pill">NO FILE</span>
+          </div>
+          <div class="mini-table" id="import-preview" style="margin-top:14px;">
+            <div class="empty-state"><div class="empty-text">SELECT CSV, GPX, OR LAP TIMER DB</div></div>
+          </div>
+          <div class="info-grid" style="margin-top:14px;">
+            <div class="info-card"><div class="info-label">AKSYS App</div><div class="status-pill good">LIVE</div><div class="info-sub">Verified app uploads to leaderboard.</div></div>
+            <div class="info-card"><div class="info-label">Lap Timer DB</div><div class="status-pill good">BROWSER PARSER</div><div class="info-sub">Reads lap tables from supported SQLite DB exports.</div></div>
+            <div class="info-card"><div class="info-label">CSV / GPX</div><div class="status-pill good">BROWSER PARSER</div><div class="info-sub">Reads lap rows or route summary from exported files.</div></div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Validation Rules</div>
+          <div class="info-sub">Official leaderboard entries should keep source, GPS accuracy, timing mode, virtual finish-line crossing, and test-mode status.</div>
+          <div class="action-row" style="margin-top:14px;">
+            <button class="ghost-btn" onclick="showPage('features')">VIEW VERIFICATION</button>
+            <button class="ghost-btn" onclick="showPage('leaderboard')">VIEW LEADERBOARD</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PAGE -->
+  <div id="page-admin" class="page">
+    <div class="page-wrap">
+      <div class="page-hero">
+        <div class="page-kicker">ADMIN</div>
+        <div class="page-title">Race Control Dashboard</div>
+        <p class="page-copy">Operational view for users, lap submissions, track configuration, and sync diagnosis. Write actions stay disabled until admin security rules are added.</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Users</div><div class="info-value" id="admin-users">—</div><div class="info-sub">Registered accounts.</div></div>
+        <div class="info-card"><div class="info-label">Lap Times</div><div class="info-value" id="admin-laps">—</div><div class="info-sub">Raw submitted laptimes.</div></div>
+        <div class="info-card"><div class="info-label">Best Laps</div><div class="info-value" id="admin-best">—</div><div class="info-sub">Deduplicated leaderboard rows.</div></div>
+        <div class="info-card"><div class="info-label">Live Sessions</div><div class="info-value" id="admin-live">—</div><div class="info-sub">Active pit wall documents.</div></div>
+      </div>
+      <div class="mini-table" style="margin-top:16px;" id="admin-recent">
+        <div class="empty-state"><div class="empty-text">LOADING RECENT SUBMISSIONS</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIDER DETAIL PAGE -->
+  <div id="page-rider" class="page">
+    <div class="page-wrap">
+      <div class="page-hero">
+        <div class="page-kicker">RIDER PROFILE</div>
+        <div class="page-title" id="rider-title">Rider</div>
+        <p class="page-copy" id="rider-copy">Public rider performance summary.</p>
+      </div>
+      <div class="info-grid" id="rider-stats"></div>
+      <div class="mini-table" style="margin-top:16px;" id="rider-sessions"></div>
+    </div>
+  </div>
+
+  <!-- SESSION DETAIL PAGE -->
+  <div id="page-session" class="page">
+    <div class="page-wrap">
+      <div class="page-hero">
+        <div class="page-kicker">SESSION DETAIL</div>
+        <div class="page-title" id="session-title">Session</div>
+        <p class="page-copy" id="session-copy">Lap details, timing source, and telemetry summary.</p>
+      </div>
+      <div class="info-grid" id="session-stats"></div>
+      <div class="info-card" style="margin-top:16px;">
+        <div class="info-label">Route Map</div>
+        <div class="info-sub">GPS route rendering will be added when the website receives full track-point payloads from app session exports.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- FEATURES PAGE -->
   <div id="page-features" class="page" style="padding:24px 32px;">
     <div style="max-width:960px;margin:0 auto;">
 
       <div style="margin-bottom:32px;">
-        <div style="font-size:10px;color:var(--orange);letter-spacing:4px;font-weight:800;margin-bottom:8px;">AKSYS LAPPRO</div>
+        <div style="font-size:10px;color:var(--orange);letter-spacing:4px;font-weight:800;margin-bottom:8px;">AKSYS LAPTIMER</div>
         <h2 style="font-size:28px;font-weight:900;letter-spacing:2px;margin:0 0 10px;">COMPLETE FEATURE LIST</h2>
         <p style="color:var(--text-dim);font-size:14px;line-height:1.6;">MotoGP-grade data acquisition for Philippine motorsport. Every feature listed below is live in the current app.</p>
       </div>
@@ -1141,7 +2396,7 @@ nav{display:flex;gap:2px;}
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Auto-detect + auto-learn start/finish line — no manual setup needed</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px;">
           <div style="background:rgba(255,107,0,0.05);border:1px solid rgba(255,107,0,0.15);border-radius:10px;padding:14px;text-align:center;">
             <div style="font-size:11px;font-weight:800;color:var(--orange);letter-spacing:2px;margin-bottom:6px;">CIS</div>
             <div style="font-size:11px;color:var(--text-dim);">Clark International Speedway</div>
@@ -1156,6 +2411,26 @@ nav{display:flex;gap:2px;}
             <div style="font-size:11px;font-weight:800;color:#00E676;letter-spacing:2px;margin-bottom:6px;">CRT</div>
             <div style="font-size:11px;color:var(--text-dim);">Carmona Race Track</div>
             <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">1.380km · 15T · CW · 500m radius</div>
+          </div>
+          <div style="background:rgba(255,213,79,0.05);border:1px solid rgba(255,213,79,0.15);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:11px;font-weight:800;color:#FFD54F;letter-spacing:2px;margin-bottom:6px;">CISK</div>
+            <div style="font-size:11px;color:var(--text-dim);">CIS Kart Track</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">External S/F line · 700m radius</div>
+          </div>
+          <div style="background:rgba(66,165,245,0.05);border:1px solid rgba(66,165,245,0.15);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:11px;font-weight:800;color:#42A5F5;letter-spacing:2px;margin-bottom:6px;">CKRP</div>
+            <div style="font-size:11px;color:var(--text-dim);">City Kart Racing Pampanga</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">External timing beacon · 500m radius</div>
+          </div>
+          <div style="background:rgba(171,71,188,0.05);border:1px solid rgba(171,71,188,0.15);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:11px;font-weight:800;color:#AB47BC;letter-spacing:2px;margin-bottom:6px;">CKT</div>
+            <div style="font-size:11px;color:var(--text-dim);">Cebu Kartzone Track</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">External timing beacon · 500m radius</div>
+          </div>
+          <div style="background:rgba(255,107,0,0.05);border:1px solid rgba(255,107,0,0.15);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:11px;font-weight:800;color:var(--orange);letter-spacing:2px;margin-bottom:6px;">TAR</div>
+            <div style="font-size:11px;color:var(--text-dim);">Tarlac Circuit Hill</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:4px;">External timing beacon · 800m radius</div>
           </div>
         </div>
         <div style="padding:12px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.15);border-radius:8px;font-size:11px;color:#00E676;">
@@ -1239,17 +2514,18 @@ nav{display:flex;gap:2px;}
 // THEME SYSTEM
 // ============================================================
 const THEMES = {
-  ducati:  { label:'DUCATI',   cls:'',              name:'Ducati Factory' },
+  ducati:  { label:'DUCATI',   cls:'theme-ducati',  name:'Ducati Factory' },
   magneti: { label:'MAGNETI',  cls:'theme-magneti', name:'Magneti Marelli' },
   pitwall: { label:'PIT WALL', cls:'theme-pitwall', name:'Pit Wall' },
-  yamaha:  { label:'YAMAHA',   cls:'theme-yamaha',  name:'Yamaha M1' }
+  yamaha:  { label:'YAMAHA',   cls:'theme-yamaha',  name:'Yamaha M1' },
+  motogp:  { label:'MOTOGP',   cls:'theme-motogp',  name:'MotoGP Grid' }
 };
 
 function setTheme(key) {
   const theme = THEMES[key];
   if (!theme) return;
   // Remove all theme classes, apply new one
-  document.body.classList.remove('theme-magneti','theme-pitwall','theme-yamaha');
+  document.body.classList.remove('theme-ducati','theme-magneti','theme-pitwall','theme-yamaha','theme-motogp');
   if (theme.cls) document.body.classList.add(theme.cls);
   // Update label
   document.getElementById('active-theme-label').textContent = theme.label;
@@ -1263,6 +2539,27 @@ function setTheme(key) {
   localStorage.setItem('aksys_theme', key);
 }
 
+function toggleThemeMenu(event) {
+  event.stopPropagation();
+  const switcher = document.getElementById('theme-switcher');
+  if (!switcher) return;
+  const isOpen = switcher.classList.toggle('open');
+  switcher.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function closeThemeMenu() {
+  const switcher = document.getElementById('theme-switcher');
+  if (!switcher) return;
+  switcher.classList.remove('open');
+  switcher.setAttribute('aria-expanded', 'false');
+}
+
+function chooseTheme(event, key) {
+  event.stopPropagation();
+  setTheme(key);
+  closeThemeMenu();
+}
+
 function loadTheme() {
   const saved = localStorage.getItem('aksys_theme') || 'ducati';
   setTheme(saved);
@@ -1270,6 +2567,10 @@ function loadTheme() {
 
 // Apply theme immediately on load
 loadTheme();
+document.addEventListener('click', closeThemeMenu);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeThemeMenu();
+});
 
 // ============================================================
 // FIREBASE CONFIG
@@ -1291,6 +2592,9 @@ let currentUser = null, currentUserData = null;
 // ============================================================
 // CIRCUIT DATA
 // ============================================================
+// TODO(next website development): add accurate, high-resolution circuit preview images.
+// The supplied third-party .map files are low-resolution compressed rasters and are not suitable
+// for public preview quality, so the current website intentionally shows track info only.
 const circuits = {
   CIS: {
     name:'Clark International Speedway', short:'CIS',
@@ -1299,7 +2603,7 @@ const circuits = {
     firestore:'Clark International Speedway',
     description:'The premier motorsport venue in the Philippines, home to the Philippine Superbike Championship and international events.',
     record: null,
-    svg: `<div style="width:100%;text-align:center;padding:8px 0;"><img src="assets/circuit-cis.jpg" alt="Clark International Speedway Layout" style="max-width:100%;max-height:220px;width:auto;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(340deg) brightness(0.9);border-radius:4px;"/></div>`
+    timing:'External PHI-CIS two-point virtual start/finish line loaded.'
   },
   BRC: {
     name:'Batangas Racing Circuit', short:'BRC',
@@ -1308,7 +2612,7 @@ const circuits = {
     firestore:'Batangas Racing Circuit',
     description:'One of the most technical circuits in the Philippines, featuring tight chicanes and fast sweepers ideal for motorcycle and car racing.',
     record: null,
-    svg: `<div style="width:100%;text-align:center;padding:8px 0;"><img src="assets/circuit-brc.jpg" alt="Batangas Racing Circuit Layout" style="max-width:100%;max-height:220px;width:auto;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(340deg) brightness(0.9);border-radius:4px;"/></div>`
+    timing:'External PHI-BRC timing beacon loaded.'
   },
   CRT: {
     name:'Carmona Race Track', short:'CRT',
@@ -1317,7 +2621,43 @@ const circuits = {
     firestore:'Carmona Race Track',
     description:'The oldest race track in the Philippines, a tight technical circuit perfect for grassroots motorsport and driver development.',
     record: null,
-    svg: `<div style="width:100%;text-align:center;padding:8px 0;"><img src="assets/circuit-crt.jpg" alt="Carmona Race Track Layout" style="max-width:100%;max-height:220px;width:auto;object-fit:contain;filter:invert(1) sepia(1) saturate(5) hue-rotate(340deg) brightness(0.9);border-radius:4px;"/></div>`
+    timing:'External PHI-CAR timing beacon loaded.'
+  },
+  CISK: {
+    name:'Clark International Speedway Kart Track', short:'CISK',
+    location:'Mabalacat, Pampanga', length:'1.200 km',
+    turns:12, direction:'CW', established:2008,
+    firestore:'Clark International Speedway Kart Track',
+    description:'External PHI-CISK timing-line support for kart sessions inside the Clark International Speedway complex.',
+    record:null,
+    timing:'External PHI-CISK two-point virtual start/finish line loaded.'
+  },
+  CKRP: {
+    name:'City Kart Racing Pampanga', short:'CKRP',
+    location:'Pampanga', length:'0.900 km',
+    turns:12, direction:'CW', established:2010,
+    firestore:'City Kart Racing Pampanga',
+    description:'External PHI-CKRP beacon support for kart timing in Pampanga.',
+    record:null,
+    timing:'External PHI-CKRP timing beacon loaded.'
+  },
+  CKT: {
+    name:'Cebu Kartzone Track', short:'CKT',
+    location:'Cebu City, Cebu', length:'0.900 km',
+    turns:12, direction:'CW', established:2000,
+    firestore:'Cebu Kartzone Track',
+    description:'External PHI-CKT beacon support for Cebu Kartzone sessions.',
+    record:null,
+    timing:'External PHI-CKT timing beacon loaded.'
+  },
+  TAR: {
+    name:'Tarlac Circuit Hill', short:'TAR',
+    location:'Tarlac', length:'1.500 km',
+    turns:12, direction:'CW', established:2020,
+    firestore:'Tarlac Circuit Hill',
+    description:'External PHI-TAR beacon support for Tarlac Circuit Hill sessions.',
+    record:null,
+    timing:'External PHI-TAR timing beacon loaded.'
   }
 };
 
@@ -1397,9 +2737,11 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  event.target.classList.add('active');
+  if (window.event?.target?.classList?.contains('nav-btn')) window.event.target.classList.add('active');
   if (name==='leaderboard') loadFullLeaderboard('Clark International Speedway');
   if (name==='profile') loadProfile();
+  if (name==='live') loadLivePitWall();
+  if (name==='admin') loadAdminDashboard();
 }
 
 // ============================================================
@@ -1409,7 +2751,13 @@ function switchCircuit(key, el) {
   document.querySelectorAll('.circuit-tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
   const c = circuits[key];
-  document.getElementById('track-svg-wrap').innerHTML = c.svg;
+  document.getElementById('track-svg-wrap').innerHTML = `
+    <div class="track-note">
+      <div class="track-note-title">${c.name}</div>
+      <div class="track-note-meta">${c.location} · ${c.short}</div>
+      <div class="track-note-body">${c.description}</div>
+      <div class="track-note-foot">${c.timing}<br>Preview image will be added in the next website development pass.</div>
+    </div>`;
   document.getElementById('track-info-values').innerHTML = `
     <div class="track-stat"><div class="track-stat-val">${c.length}</div><div class="track-stat-label">LENGTH</div></div>
     <div class="track-stat"><div class="track-stat-val">${c.turns}</div><div class="track-stat-label">TURNS</div></div>
@@ -1417,8 +2765,11 @@ function switchCircuit(key, el) {
     <div class="track-stat"><div class="track-stat-val">${c.established}</div><div class="track-stat-label">EST.</div></div>
     <div class="track-stat"><div class="track-stat-val" id="cir-record-${key}">—</div><div class="track-stat-label">RECORD</div></div>`;
   // Load record for this circuit (Motorcycle category — bestLaps is deduplicated per rider)
-  db.collection('bestLaps').where('circuit','==',c.firestore).where('vehicleType','==','Motorcycle').orderBy('lapSeconds','asc').limit(1).get()
-    .then(s => { if (!s.empty) document.getElementById('cir-record-'+key).textContent = formatLapTime(s.docs[0].data().lapSeconds); })
+  db.collection('bestLaps').where('circuit','==',c.firestore).where('vehicleType','==','Motorcycle').orderBy('lapSeconds','asc').limit(20).get()
+    .then(s => {
+      const record = s.docs.map(d => d.data()).find(t => t.leaderboardVisible !== false);
+      if (record) document.getElementById('cir-record-'+key).textContent = formatLapTime(record.lapSeconds);
+    })
     .catch(()=>{});
 }
 
@@ -1429,13 +2780,15 @@ function renderCircuitsPage() {
   const grid = document.getElementById('circuits-grid');
   grid.innerHTML = Object.values(circuits).map(c => `
     <div class="feature-card" style="background:var(--card2);border:1px solid var(--border);overflow:hidden;border-radius:var(--radius-card);box-shadow:var(--shadow-card);">
-      <div style="padding:20px 20px 0;">${c.svg}</div>
-      <div style="padding:20px;border-top:1px solid var(--border);">
+      <div style="padding:20px;">
         <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
           <span style="font-family:'Inter',-apple-system,sans-serif;font-size:22px;font-weight:900;">${c.name}</span>
           <span style="font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:700;">${c.short}</span>
         </div>
         <p style="font-size:13px;color:var(--muted2);line-height:1.5;margin-bottom:16px;">${c.description}</p>
+        <div style="font-size:11px;line-height:1.45;color:var(--muted);border:1px solid var(--border);background:rgba(255,255,255,0.035);border-radius:10px;padding:12px;margin-bottom:16px;">
+          ${c.timing}<br>Preview image will be added in the next website development pass.
+        </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div style="background:rgba(255,255,255,0.04);padding:10px 12px;">
             <div style="font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:700;margin-bottom:4px;">LENGTH</div>
@@ -1453,6 +2806,10 @@ function renderCircuitsPage() {
             <div style="font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:700;margin-bottom:4px;">EST.</div>
             <div style="font-family:'Inter',-apple-system,sans-serif;font-size:16px;font-weight:800;color:var(--orange);">${c.established}</div>
           </div>
+        </div>
+        <div class="action-row" style="margin-top:16px;">
+          <button class="ghost-btn" onclick="currentFullCircuit='${escapeAttr(c.firestore)}';showPage('leaderboard');loadFullLeaderboard('${escapeAttr(c.firestore)}',currentFullCategory)">LEADERBOARD</button>
+          <button class="ghost-btn" onclick="switchCircuit('${escapeAttr(c.short)}', document.querySelector('.circuit-tab[onclick*=\\'${escapeAttr(c.short)}\\']'));showPage('dashboard')">DASHBOARD CARD</button>
         </div>
       </div>
     </div>`).join('');
@@ -1590,10 +2947,49 @@ let currentDashCircuit = 'Clark International Speedway';
 let currentDashCategory = 'Motorcycle';
 let currentFullCircuit = 'Clark International Speedway';
 let currentFullCategory = 'Motorcycle';
+
+async function loadLeaderboardTimes(circuit, category, limitCount = null) {
+  const bestQuery = db.collection('bestLaps')
+    .where('circuit','==',circuit)
+    .where('vehicleType','==',category)
+    .orderBy('lapSeconds','asc');
+  const bestLimit = limitCount ? Math.max(limitCount * 3, limitCount + 20) : null;
+  const bestSnap = await (bestLimit ? bestQuery.limit(bestLimit).get() : bestQuery.get());
+  const bestTimes = [];
+  bestSnap.forEach(d => {
+    const data = { id:d.id, ...d.data() };
+    if (data.leaderboardVisible !== false) bestTimes.push(data);
+  });
+  if (bestTimes.length > 0) return limitCount ? bestTimes.slice(0, limitCount) : bestTimes;
+
+  // Legacy fallback: early app builds wrote only to laptimes, before bestLaps existed.
+  // Keep old uploaded laps visible by deriving one best entry per rider/category.
+  const legacySnap = await db.collection('laptimes').where('circuit','==',circuit).get();
+  const bestByUser = new Map();
+  legacySnap.forEach(doc => {
+    const data = { id:doc.id, ...doc.data() };
+    if (data.leaderboardVisible === false) return;
+    const vehicleType = data.vehicleType || data.vehicle || 'Motorcycle';
+    if (vehicleType !== category) return;
+    if (typeof data.lapSeconds !== 'number') return;
+    const key = data.userId || doc.id;
+    const current = bestByUser.get(key);
+    if (!current || data.lapSeconds < current.lapSeconds) {
+      bestByUser.set(key, {
+        ...data,
+        updatedAt: data.submittedAt,
+        vehicleType: category,
+        vehicle: data.vehicleModel || data.vehicle || category
+      });
+    }
+  });
+  const legacyTimes = Array.from(bestByUser.values()).sort((a,b) => a.lapSeconds - b.lapSeconds);
+  return limitCount ? legacyTimes.slice(0, limitCount) : legacyTimes;
+}
+
 async function loadDashboard() {
   try {
-    const snap = await db.collection('bestLaps').where('circuit','==','Clark International Speedway').where('vehicleType','==',currentDashCategory).orderBy('lapSeconds','asc').limit(10).get();
-    const times = []; snap.forEach(d => times.push({id:d.id,...d.data()}));
+    const times = await loadLeaderboardTimes('Clark International Speedway', currentDashCategory, 10);
 
     const stats = await loadStats();
     document.getElementById('stat-racers').textContent = stats.totalRacers;
@@ -1650,8 +3046,7 @@ function switchLbCategory(category, el, context) {
 async function loadDashboardLb(circuit, category) {
   category = category || currentDashCategory;
   try {
-    const snap = await db.collection('bestLaps').where('circuit','==',circuit).where('vehicleType','==',category).orderBy('lapSeconds','asc').limit(10).get();
-    const times=[]; snap.forEach(d=>times.push({id:d.id,...d.data()}));
+    const times = await loadLeaderboardTimes(circuit, category, 10);
     renderLeaderboard('dashboard-lb',times,10);
   } catch(e) {}
 }
@@ -1669,7 +3064,7 @@ function renderLeaderboard(containerId, times, limit) {
       <div class="rank">${i+1}</div>
       <div class="driver-info">
         <div class="driver-name">${t.displayName||'ANON'}</div>
-        <div class="driver-meta">${t.vehicle||'—'}</div>
+        <div class="driver-meta">${escapeHtml(t.vehicle||'—')} · ${verificationBadge(t)}</div>
       </div>
       <div class="lap-time ${i===0?'orange':''}">${formatLapTime(t.lapSeconds)}</div>
       <div>${formatDelta(t.lapSeconds,bestSec)}</div>
@@ -1682,27 +3077,46 @@ function renderLeaderboard(containerId, times, limit) {
 async function loadFullLeaderboard(circuit, category) {
   category = category || currentFullCategory;
   try {
-    const snap = await db.collection('bestLaps').where('circuit','==',circuit).where('vehicleType','==',category).orderBy('lapSeconds','asc').get();
-    const times=[]; snap.forEach(d=>times.push({id:d.id,...d.data()}));
+    let times = await loadLeaderboardTimes(circuit, category);
+    times = applyLeaderboardFilters(times);
     document.getElementById('lb-count').textContent = `${times.length} ENTRIES`;
     const bestSec = times[0]?.lapSeconds;
     document.getElementById('full-lb').innerHTML = times.length===0
       ? '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET</div></div>'
       : times.map((t,i)=>`
-        <div class="lb-full-row ${t.userId===currentUser?.uid?'mine':''}">
+        <div class="lb-full-row ${t.userId===currentUser?.uid?'mine':''}" onclick="openRiderDetail('${escapeAttr(t.userId||'')}', '${escapeAttr(t.displayName||'ANON')}')" style="cursor:pointer;">
           <div style="font-family:'Inter',-apple-system,sans-serif;font-size:22px;font-weight:900;color:${i===0?'var(--gold)':i===1?'var(--silver)':i===2?'var(--bronze)':'var(--muted)'};">${i+1}</div>
           <div>
-            <div style="font-weight:700;font-size:14px;">${t.displayName||'ANON'} ${t.userId===currentUser?.uid?'<span style="font-size:10px;color:var(--orange);letter-spacing:2px;">YOU</span>':''}</div>
-            <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px;">${t.updatedAt?.toDate?.()?.toLocaleDateString('en-PH')||'—'}</div>
+            <div style="font-weight:700;font-size:14px;">${escapeHtml(t.displayName||'ANON')} ${t.userId===currentUser?.uid?'<span style="font-size:10px;color:var(--orange);letter-spacing:2px;">YOU</span>':''}</div>
+            <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px;">${t.updatedAt?.toDate?.()?.toLocaleDateString('en-PH')||'—'} · ${verificationBadge(t)}</div>
           </div>
           <div style="font-family:'SF Mono',ui-monospace,monospace;font-size:16px;color:${i===0?'var(--orange)':'var(--text)'};">${formatLapTime(t.lapSeconds)}</div>
-          <div style="font-size:13px;color:var(--muted2);">${t.vehicle||'—'}</div>
+          <div style="font-size:13px;color:var(--muted2);">${escapeHtml(t.vehicle||'—')}</div>
           <div style="font-family:'SF Mono',ui-monospace,monospace;font-size:13px;color:var(--cyan);">${t.topSpeed?t.topSpeed+' km/h':'—'}</div>
           <div>${formatDelta(t.lapSeconds,bestSec)}</div>
         </div>`).join('');
   } catch(e) {
     document.getElementById('full-lb').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET</div></div>';
   }
+}
+
+function applyLeaderboardFilters(times) {
+  const search = (document.getElementById('lb-search')?.value || '').trim().toLowerCase();
+  const dateFilter = document.getElementById('lb-date-filter')?.value || 'all';
+  const sessionFilter = document.getElementById('lb-session-filter')?.value || 'all';
+  let minDate = null;
+  if (dateFilter === 'today') { minDate = new Date(); minDate.setHours(0,0,0,0); }
+  else if (dateFilter !== 'all') { minDate = new Date(Date.now() - Number(dateFilter) * 86400000); }
+  return times.filter(t => {
+    const haystack = `${t.displayName||''} ${t.vehicle||''} ${t.vehicleModel||''}`.toLowerCase();
+    if (search && !haystack.includes(search)) return false;
+    if (sessionFilter !== 'all' && (t.sessionType || '').toLowerCase() !== sessionFilter) return false;
+    if (minDate) {
+      const d = t.updatedAt?.toDate?.() || t.submittedAt?.toDate?.();
+      if (!d || d < minDate) return false;
+    }
+    return true;
+  });
 }
 
 // ============================================================
@@ -1730,12 +3144,16 @@ async function loadProfile() {
     const myBestSnap = await db.collection('bestLaps').doc(bestDocId).get();
     if (myBestSnap.exists) {
       const myBest = myBestSnap.data().lapSeconds;
-      const aheadCount = await db.collection('bestLaps')
+      const aheadSnap = await db.collection('bestLaps')
         .where('circuit','==','Clark International Speedway')
         .where('vehicleType','==','Motorcycle')
         .where('lapSeconds','<',myBest)
-        .count().get();
-      rank = aheadCount.data().count + 1;
+        .get();
+      let visibleAhead = 0;
+      aheadSnap.forEach(doc => {
+        if (doc.data().leaderboardVisible !== false) visibleAhead++;
+      });
+      rank = visibleAhead + 1;
     }
     document.getElementById('profile-rank').textContent = 'RANK #'+rank;
 
@@ -1773,6 +3191,311 @@ async function saveProfile() {
     document.getElementById('profile-vehicle-display').innerHTML='<svg class="icon"><use href="#icon-bike"/></svg>'+veh;
     setTimeout(()=>msg.textContent='',3000);
   } catch(e) { msg.textContent='Error: '+e.message; msg.style.color='var(--red)'; }
+}
+
+// ============================================================
+// LIVE PIT WALL
+// ============================================================
+let livePitWallUnsub = null;
+function loadLivePitWall() {
+  const grid = document.getElementById('live-pit-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="empty-state"><div class="empty-text">CONNECTING TO LIVE PIT WALL</div></div>';
+  if (livePitWallUnsub) livePitWallUnsub();
+  livePitWallUnsub = db.collection('liveSessions').where('isActive','==',true)
+    .onSnapshot(snap => {
+      const riders = [];
+      snap.forEach(doc => riders.push({id:doc.id,...doc.data()}));
+      grid.innerHTML = riders.length === 0
+        ? '<div class="empty-state"><div class="empty-text">NO RIDERS ON TRACK</div></div>'
+        : riders.map(renderLiveRiderCard).join('');
+    }, () => {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-text">LIVE FEED UNAVAILABLE</div></div>';
+    });
+}
+
+function renderLiveRiderCard(r) {
+  const updated = r.updatedAt?.toDate?.();
+  const stale = !updated || (Date.now() - updated.getTime()) > 10000;
+  return `<div class="info-card">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
+      <div><div class="info-label">${escapeHtml(r.trackName||'TRACK')}</div><div class="info-value">${escapeHtml(r.displayName||'Rider')}</div></div>
+      <span class="status-pill ${stale?'warn':'good'}">${stale?'SIGNAL STALE':'LIVE'}</span>
+    </div>
+    <div class="info-grid">
+      <div><div class="info-label">Current Lap</div><div class="info-value">${formatLapTime(r.lapTime)}</div></div>
+      <div><div class="info-label">Best</div><div class="info-value">${formatLapTime(r.bestLapTime)}</div></div>
+      <div><div class="info-label">Speed</div><div class="info-value">${numberOrDash(r.speed)} km/h</div></div>
+      <div><div class="info-label">Lean</div><div class="info-value">${numberOrDash(r.leanAngle)}°</div></div>
+      <div><div class="info-label">Heart Rate</div><div class="info-value">${r.heartRate||'—'} bpm</div></div>
+      <div><div class="info-label">GPS</div><div class="info-value">${r.gpsAccuracy ? '±'+Math.round(r.gpsAccuracy)+'m' : '—'}</div></div>
+    </div>
+    <div class="info-sub">Last update: ${updated ? updated.toLocaleTimeString('en-PH') : '—'} · Connection: Watch/iPhone → Firestore → Website</div>
+  </div>`;
+}
+
+// ============================================================
+// IMPORT CENTER
+// ============================================================
+let pendingImportedLaps = [];
+let sqlJsPromise = null;
+
+async function handleImportFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const status = document.getElementById('import-status');
+  status.className = 'status-pill warn';
+  status.textContent = 'PARSING';
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'csv') pendingImportedLaps = parseImportedCsv(await file.text(), file.name);
+    else if (ext === 'gpx') pendingImportedLaps = parseImportedGpx(await file.text(), file.name);
+    else if (ext === 'db') pendingImportedLaps = await parseExternalLoggerDb(await file.arrayBuffer(), file.name);
+    else throw new Error('Unsupported file type');
+    renderImportPreview();
+    status.className = pendingImportedLaps.length ? 'status-pill good' : 'status-pill warn';
+    status.textContent = pendingImportedLaps.length ? `${pendingImportedLaps.length} LAPS READY` : 'NO LAPS FOUND';
+  } catch(e) {
+    pendingImportedLaps = [];
+    document.getElementById('import-preview').innerHTML = `<div class="empty-state"><div class="empty-text">${escapeHtml(e.message)}</div></div>`;
+    status.className = 'status-pill warn';
+    status.textContent = 'PARSE FAILED';
+  }
+}
+
+function parseImportedCsv(text, fileName) {
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  return lines.slice(1).map((line, idx) => {
+    const cells = splitCsvLine(line);
+    const row = Object.fromEntries(headers.map((h,i) => [h, cells[i] || '']));
+    const seconds = Number(row.lapseconds || row.lap_seconds || row.seconds || parseTimeToSeconds(row.laptime || row.lap_time || row.time || ''));
+    if (!Number.isFinite(seconds) || seconds <= 0) return null;
+    return {
+      lapNumber: Number(row.lap || row.lapnumber || idx + 1),
+      lapSeconds: seconds,
+      topSpeed: Number(row.topspeed || row.top_speed || row.maxspeed || row.max_spd || 0) || null,
+      source: 'website_csv_import',
+      importFileName: fileName
+    };
+  }).filter(Boolean);
+}
+
+function splitCsvLine(line) {
+  const out = []; let cur = '', quote = false;
+  for (let i=0;i<line.length;i++) {
+    const ch = line[i];
+    if (ch === '"' && line[i+1] === '"') { cur += '"'; i++; }
+    else if (ch === '"') quote = !quote;
+    else if (ch === ',' && !quote) { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+function parseImportedGpx(text, fileName) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  const pts = Array.from(doc.querySelectorAll('trkpt'));
+  if (pts.length < 2) return [];
+  const firstTime = pts[0].querySelector('time')?.textContent;
+  const lastTime = pts[pts.length-1].querySelector('time')?.textContent;
+  const seconds = firstTime && lastTime ? (new Date(lastTime)-new Date(firstTime))/1000 : null;
+  if (!seconds || seconds <= 0) return [];
+  return [{
+    lapNumber: 1,
+    lapSeconds: seconds,
+    topSpeed: null,
+    source: 'website_gpx_import',
+    importFileName: fileName,
+    trackPointCount: pts.length
+  }];
+}
+
+async function parseExternalLoggerDb(buffer, fileName) {
+  if (!sqlJsPromise) {
+    sqlJsPromise = initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}` });
+  }
+  const SQL = await sqlJsPromise;
+  const database = new SQL.Database(new Uint8Array(buffer));
+  const tables = database.exec("select name from sqlite_master where type='table'");
+  const tableNames = tables[0]?.values?.map(v => v[0]) || [];
+  if (!tableNames.includes('lap')) throw new Error('No supported lap table found');
+  const result = database.exec('select * from lap where ifnull(bFailed,0)=0 order by id asc');
+  if (!result.length) return [];
+  const cols = result[0].columns;
+  const rows = result[0].values.map(values => Object.fromEntries(cols.map((c,i) => [c, values[i]])));
+  database.close();
+  return rows.map((r, idx) => ({
+    lapNumber: Number(r.id || idx + 1),
+    lapSeconds: Number(r.duration),
+    topSpeed: Number(r.MaxSpd || 0) || null,
+    distanceKm: Number(r.distance || 0) || null,
+    avgSpeed: Number(r.AvgSpd || 0) || null,
+    maxG: Number(r.MaxG || 0) || null,
+    startLat: Number(r.start_inter_lat || 0) || null,
+    startLon: Number(r.start_inter_lon || 0) || null,
+    finishLat: Number(r.finish_inter_lat || 0) || null,
+    finishLon: Number(r.finish_inter_lon || 0) || null,
+    source: 'external_db_import',
+    importFileName: fileName
+  })).filter(l => Number.isFinite(l.lapSeconds) && l.lapSeconds > 0);
+}
+
+function renderImportPreview() {
+  const el = document.getElementById('import-preview');
+  if (!pendingImportedLaps.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-text">NO VALID LAPS FOUND</div></div>';
+    return;
+  }
+  const best = pendingImportedLaps.reduce((m,l)=> Math.min(m,l.lapSeconds), Infinity);
+  el.innerHTML = pendingImportedLaps.slice(0,12).map(l => `
+    <div class="mini-row">
+      <div><strong>Lap ${l.lapNumber || '—'}</strong><div class="driver-meta">${escapeHtml(l.source)} · ${escapeHtml(l.importFileName||'')}</div></div>
+      <div class="lap-time ${l.lapSeconds===best?'orange':''}">${formatLapTime(l.lapSeconds)}</div>
+      <div>${l.topSpeed ? Math.round(l.topSpeed)+' km/h' : '—'}</div>
+    </div>`).join('') + (pendingImportedLaps.length > 12 ? `<div class="mini-row"><div>+ ${pendingImportedLaps.length - 12} more laps</div><div></div><div></div></div>` : '');
+}
+
+async function uploadImportedLaps() {
+  if (!currentUser || !pendingImportedLaps.length) return;
+  const circuit = document.getElementById('import-circuit').value;
+  const vehicleType = document.getElementById('import-vehicle-type').value;
+  const vehicle = document.getElementById('import-vehicle').value.trim() || currentUserData?.vehicle || vehicleType;
+  const displayName = currentUserData?.displayName || currentUser.email;
+  const status = document.getElementById('import-status');
+  status.className = 'status-pill warn';
+  status.textContent = 'UPLOADING';
+  try {
+    const batch = db.batch();
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+    pendingImportedLaps.forEach(lap => {
+      const ref = db.collection('laptimes').doc();
+      batch.set(ref, {
+        ...lap,
+        userId: currentUser.uid,
+        displayName,
+        circuit,
+        vehicleType,
+        vehicle,
+        submittedAt: now,
+        source: lap.source || 'website_import',
+        verificationStatus: 'imported',
+        isOfficial: false
+      });
+    });
+    await batch.commit();
+    await upsertImportedBestLap(pendingImportedLaps, { circuit, vehicleType, vehicle, displayName });
+    status.className = 'status-pill good';
+    status.textContent = 'UPLOADED';
+    pendingImportedLaps = [];
+    document.getElementById('import-preview').innerHTML = '<div class="empty-state"><div class="empty-text">IMPORT UPLOADED</div></div>';
+    loadDashboard();
+  } catch(e) {
+    status.className = 'status-pill warn';
+    status.textContent = 'UPLOAD FAILED';
+  }
+}
+
+async function upsertImportedBestLap(laps, meta) {
+  const best = laps.reduce((a,b)=> a.lapSeconds <= b.lapSeconds ? a : b);
+  const docId = `${currentUser.uid}_${slugify(meta.circuit)}_${slugify(meta.vehicleType)}`;
+  const ref = db.collection('bestLaps').doc(docId);
+  const existing = await ref.get();
+  if (existing.exists && existing.data().lapSeconds <= best.lapSeconds) return;
+  await ref.set({
+    userId: currentUser.uid,
+    displayName: meta.displayName,
+    circuit: meta.circuit,
+    vehicleType: meta.vehicleType,
+    vehicle: meta.vehicle,
+    lapSeconds: best.lapSeconds,
+    topSpeed: best.topSpeed || null,
+    source: best.source || 'website_import',
+    verificationStatus: 'imported',
+    isOfficial: false,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge:true });
+}
+
+// ============================================================
+// ADMIN / DETAIL PAGES
+// ============================================================
+async function loadAdminDashboard() {
+  try {
+    const [users,laps,best,live] = await Promise.all([
+      db.collection('users').count().get(),
+      db.collection('laptimes').count().get(),
+      db.collection('bestLaps').count().get(),
+      db.collection('liveSessions').where('isActive','==',true).count().get()
+    ]);
+    document.getElementById('admin-users').textContent = users.data().count;
+    document.getElementById('admin-laps').textContent = laps.data().count;
+    document.getElementById('admin-best').textContent = best.data().count;
+    document.getElementById('admin-live').textContent = live.data().count;
+    const recent = await db.collection('laptimes').orderBy('submittedAt','desc').limit(8).get();
+    const rows = [];
+    recent.forEach(doc => rows.push({id:doc.id,...doc.data()}));
+    document.getElementById('admin-recent').innerHTML = rows.length ? rows.map(r => `
+      <div class="mini-row" onclick="openSessionDetail('${escapeAttr(r.id)}')" style="cursor:pointer;">
+        <div><strong>${escapeHtml(r.displayName||'ANON')}</strong><div class="driver-meta">${escapeHtml(r.circuit||'—')} · ${escapeHtml(r.vehicle||r.vehicleType||'—')}</div></div>
+        <div class="lap-time orange">${formatLapTime(r.lapSeconds)}</div>
+        <div class="status-pill">VIEW</div>
+      </div>`).join('') : '<div class="empty-state"><div class="empty-text">NO SUBMISSIONS</div></div>';
+  } catch(e) {
+    document.getElementById('admin-recent').innerHTML = '<div class="empty-state"><div class="empty-text">ADMIN READ FAILED</div></div>';
+  }
+}
+
+async function openRiderDetail(userId, fallbackName) {
+  showPage('rider');
+  document.getElementById('rider-title').textContent = (fallbackName || 'Rider').toUpperCase();
+  document.getElementById('rider-copy').textContent = 'Loading rider performance...';
+  try {
+    const q = userId
+      ? db.collection('laptimes').where('userId','==',userId).orderBy('submittedAt','desc').limit(20)
+      : db.collection('laptimes').where('displayName','==',fallbackName).orderBy('submittedAt','desc').limit(20);
+    const snap = await q.get();
+    const rows = []; snap.forEach(doc => rows.push({id:doc.id,...doc.data()}));
+    const best = rows.reduce((m,r)=> typeof r.lapSeconds === 'number' && (!m || r.lapSeconds < m) ? r.lapSeconds : m, null);
+    const topSpeed = rows.reduce((m,r)=> Math.max(m, Number(r.topSpeed||0)), 0);
+    document.getElementById('rider-copy').textContent = `${rows.length} recent submissions across AKSYS LapTimer.`;
+    document.getElementById('rider-stats').innerHTML = `
+      <div class="info-card"><div class="info-label">Best Lap</div><div class="info-value">${formatLapTime(best)}</div></div>
+      <div class="info-card"><div class="info-label">Sessions</div><div class="info-value">${rows.length}</div></div>
+      <div class="info-card"><div class="info-label">Top Speed</div><div class="info-value">${topSpeed ? topSpeed+' km/h' : '—'}</div></div>
+      <div class="info-card"><div class="info-label">Timing Source</div><div class="info-value">Verified</div><div class="info-sub">App/external imports where available.</div></div>`;
+    document.getElementById('rider-sessions').innerHTML = rows.length ? rows.map(r => `
+      <div class="mini-row" onclick="openSessionDetail('${escapeAttr(r.id)}')" style="cursor:pointer;">
+        <div><strong>${escapeHtml(r.circuit||'Track')}</strong><div class="driver-meta">${r.submittedAt?.toDate?.()?.toLocaleDateString('en-PH')||'—'} · ${escapeHtml(r.vehicle||'—')}</div></div>
+        <div class="lap-time orange">${formatLapTime(r.lapSeconds)}</div>
+        <div>${r.topSpeed ? r.topSpeed+' km/h' : '—'}</div>
+      </div>`).join('') : '<div class="empty-state"><div class="empty-text">NO RIDER SESSIONS FOUND</div></div>';
+  } catch(e) {
+    document.getElementById('rider-copy').textContent = 'Rider detail unavailable.';
+  }
+}
+
+async function openSessionDetail(id) {
+  showPage('session');
+  try {
+    const doc = await db.collection('laptimes').doc(id).get();
+    if (!doc.exists) throw new Error('missing session');
+    const s = {id:doc.id,...doc.data()};
+    document.getElementById('session-title').textContent = `${escapeHtml(s.displayName||'Session')} · ${formatLapTime(s.lapSeconds)}`;
+    document.getElementById('session-copy').textContent = `${s.circuit||'Track'} · ${s.submittedAt?.toDate?.()?.toLocaleString('en-PH')||'—'}`;
+    document.getElementById('session-stats').innerHTML = `
+      <div class="info-card"><div class="info-label">Lap Time</div><div class="info-value">${formatLapTime(s.lapSeconds)}</div></div>
+      <div class="info-card"><div class="info-label">Vehicle</div><div class="info-value">${escapeHtml(s.vehicle||s.vehicleType||'—')}</div></div>
+      <div class="info-card"><div class="info-label">Top Speed</div><div class="info-value">${s.topSpeed ? s.topSpeed+' km/h' : '—'}</div></div>
+      <div class="info-card"><div class="info-label">Accuracy</div><div class="info-value">${s.gpsAccuracy ? '±'+Math.round(s.gpsAccuracy)+'m' : '—'}</div><div class="info-sub">GPS/timing accuracy should be uploaded by app session payloads.</div></div>
+      <div class="info-card"><div class="info-label">Timing Mode</div><div class="info-value">${escapeHtml(s.timingMode||s.source||'App')}</div><div class="info-sub">Virtual finish-line crossing where supported.</div></div>
+      <div class="info-card"><div class="info-label">Test Mode</div><div class="info-value">${s.isTestMode ? 'YES' : 'NO'}</div></div>
+      <div class="info-card"><div class="info-label">Leaderboard Status</div><div class="info-value">${s.isOfficial === false || s.verificationStatus === 'imported' ? 'IMPORTED' : 'APP VERIFIED'}</div><div class="info-sub">${s.isOfficial === false || s.verificationStatus === 'imported' ? 'Shown separately from official app-recorded laps.' : 'Recorded by AKSYS LapTimer app session flow.'}</div></div>`;
+  } catch(e) {
+    document.getElementById('session-copy').textContent = 'Session detail unavailable.';
+  }
 }
 
 // ============================================================
@@ -1816,6 +3539,27 @@ function formatDelta(lapSec,bestSec) {
   if (lapSec===bestSec) return '<span class="delta leader">LEADER</span>';
   const diff=lapSec-bestSec;
   return `<span class="delta">+${diff.toFixed(3)}s</span>`;
+}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+function numberOrDash(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.round(n) : '—';
+}
+function slugify(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+function verificationBadge(row) {
+  const imported = row?.isOfficial === false || row?.verificationStatus === 'imported' || String(row?.source || '').includes('import');
+  return imported
+    ? '<span style="color:var(--yellow);">IMPORTED · NON-OFFICIAL</span>'
+    : '<span style="color:var(--green);">APP VERIFIED</span>';
 }
 </script>
 </body>
