@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AKSYS LapTimer — Philippine Motorsport Dashboard</title>
-<meta name="description" content="Verified lap times, leaderboards, and live telemetry for Philippine motorsport — Clark International Speedway, Batangas Racing Circuit, and Carmona Race Track.">
+<title>AKSYS LapTimer — GPS Lap Timing for Philippine Motorsport</title>
+<meta name="description" content="GPS lap timing, Apple Watch telemetry, leaderboard uploads, and live pit wall tools for Philippine motorsport. Built for CIS, BRC, CRT, and more local circuits.">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="AKSYS LapTimer — Philippine Motorsport Dashboard">
-<meta property="og:description" content="Verified lap times, leaderboards, and live telemetry for Philippine motorsport — Clark International Speedway, Batangas Racing Circuit, and Carmona Race Track.">
+<meta property="og:title" content="AKSYS LapTimer — GPS Lap Timing for Philippine Motorsport">
+<meta property="og:description" content="GPS lap timing, Apple Watch telemetry, leaderboard uploads, and live pit wall tools for Philippine motorsport.">
 <meta property="og:image" content="https://laptimer.ak-sys.com/assets/og-image.jpg">
 <meta property="og:url" content="https://laptimer.ak-sys.com">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AKSYS LapTimer — Philippine Motorsport Dashboard">
-<meta name="twitter:description" content="Verified lap times, leaderboards, and live telemetry for Philippine motorsport.">
+<meta name="twitter:title" content="AKSYS LapTimer — GPS Lap Timing for Philippine Motorsport">
+<meta name="twitter:description" content="GPS lap timing, Apple Watch telemetry, leaderboard uploads, and live pit wall tools.">
 <meta name="twitter:image" content="https://laptimer.ak-sys.com/assets/og-image.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=SF+Mono&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -1634,7 +1634,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <button class="nav-btn" onclick="showPage('circuits')">CIRCUITS</button>
       <button class="nav-btn" onclick="showPage('live')">PIT WALL</button>
       <button class="nav-btn" onclick="showPage('upload')">IMPORT</button>
-      <button class="nav-btn" onclick="showPage('admin')">ADMIN</button>
+      <button class="nav-btn" id="admin-nav-btn" onclick="showPage('admin')" style="display:none;">ADMIN</button>
       <button class="nav-btn" onclick="showPage('features')">FEATURES</button>
       <button class="nav-btn" onclick="showPage('profile')">PROFILE</button>
       
@@ -1720,21 +1720,21 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
             <h2 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px;">AKSYS LapTimer</h2>
             <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:var(--radius-pill);display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#00E676;"></span>NOW LIVE</span>
-            <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:var(--radius-pill);">🇵🇭 ₱999 · PH ONLY</span>
+            <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:var(--radius-pill);">PH LAUNCH · 30-DAY TRIAL</span>
           </div>
-          <p>Professional GPS lap timing for Philippine motorsport — base timing for every rider, with a Pro tier for teams that need live pit wall and deeper telemetry.</p>
+          <p>Professional GPS lap timing for Philippine motorsport — iPhone and Apple Watch timing, automatic circuit detection, live telemetry, and leaderboard uploads for trackday riders.</p>
           <div class="product-tiers">
             <div class="tier-card">
-              <div class="tier-pill">BASE APP</div>
+              <div class="tier-pill">TRACKDAY TRIAL</div>
               <div class="tier-name">AKSYS LapTimer</div>
-              <div class="tier-price">₱999 one-time</div>
-              <div class="tier-copy">iPhone + Apple Watch lap timing, Philippine track auto-detect, GPS route logging, Test Mode, session history, and official app-recorded leaderboard uploads.</div>
+              <div class="tier-price">30 days free</div>
+              <div class="tier-copy">Full GPS lap timing, Apple Watch telemetry, CIS/BRC/CRT auto-detect, Test Mode, route logging, and leaderboard uploads during the launch trial.</div>
             </div>
             <div class="tier-card pro">
-              <div class="tier-pill">PRO TIER</div>
-              <div class="tier-name">AKSYS LapTimer Pro</div>
-              <div class="tier-price">Planned subscription</div>
-              <div class="tier-copy">Live pit wall, paddock sharing, cloud backup, advanced telemetry analysis, import center, team tools, and unlimited exports. StoreKit pricing will be enabled before launch.</div>
+              <div class="tier-pill">FULL UNLOCK</div>
+              <div class="tier-name">AKSYS LapTimer</div>
+              <div class="tier-price">₱999 one-time</div>
+              <div class="tier-copy">Keep using the app after trial expiry. Paid riders keep leaderboard visibility, live pit wall sharing, session history, Apple Health BPM, and full telemetry analysis.</div>
             </div>
           </div>
         </div>
@@ -2015,7 +2015,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <div class="page-hero">
         <div class="page-kicker">IMPORT CENTER</div>
         <div class="page-title">Upload & Import Sessions</div>
-        <p class="page-copy">Use the iOS app for verified uploads. This page prepares the website workflow for AKSYS exports, third-party lap timer DB files, CSV, and GPX imports.</p>
+        <p class="page-copy">Use the iOS app for verified uploads. This page prepares the website workflow for AKSYS exports, third-party lap timer database files, CSV, and GPX imports.</p>
       </div>
       <div class="split-grid">
         <div class="info-card">
@@ -2588,6 +2588,16 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 let currentUser = null, currentUserData = null;
+const ADMIN_EMAILS = ['ariesnaceno@yahoo.com'];
+
+function isCurrentUserAdmin() {
+  return !!currentUser?.email && ADMIN_EMAILS.includes(currentUser.email.toLowerCase());
+}
+
+function updateAdminVisibility() {
+  const adminBtn = document.getElementById('admin-nav-btn');
+  if (adminBtn) adminBtn.style.display = isCurrentUserAdmin() ? '' : 'none';
+}
 
 // ============================================================
 // CIRCUIT DATA
@@ -2717,6 +2727,7 @@ auth.onAuthStateChanged(async user => {
     const name = currentUserData?.displayName || user.email;
     document.getElementById('header-name').textContent = name.toUpperCase().substring(0,12);
     document.getElementById('header-avatar').textContent = name[0].toUpperCase();
+    updateAdminVisibility();
     // Init
     loadDashboard();
     renderCircuitsPage();
@@ -2725,6 +2736,7 @@ auth.onAuthStateChanged(async user => {
     startRealtimeListener();
   } else {
     currentUser = null; currentUserData = null;
+    updateAdminVisibility();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
   }
@@ -2734,6 +2746,9 @@ auth.onAuthStateChanged(async user => {
 // PAGE NAV
 // ============================================================
 function showPage(name) {
+  if (name === 'admin' && !isCurrentUserAdmin()) {
+    name = 'dashboard';
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -3423,6 +3438,10 @@ async function upsertImportedBestLap(laps, meta) {
 // ADMIN / DETAIL PAGES
 // ============================================================
 async function loadAdminDashboard() {
+  if (!isCurrentUserAdmin()) {
+    document.getElementById('admin-recent').innerHTML = '<div class="empty-state"><div class="empty-text">ADMIN ACCESS ONLY</div></div>';
+    return;
+  }
   try {
     const [users,laps,best,live] = await Promise.all([
       db.collection('users').count().get(),
