@@ -1633,7 +1633,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <button class="nav-btn" onclick="showPage('leaderboard')">LEADERBOARD</button>
       <button class="nav-btn" onclick="showPage('circuits')">CIRCUITS</button>
       <button class="nav-btn" onclick="showPage('live')">PIT WALL</button>
-      <button class="nav-btn" onclick="showPage('upload')">IMPORT</button>
+      <button class="nav-btn admin-only" onclick="showPage('upload')" style="display:none;">IMPORT</button>
       <button class="nav-btn" id="admin-nav-btn" onclick="showPage('admin')" style="display:none;">ADMIN</button>
       <button class="nav-btn" onclick="showPage('features')">FEATURES</button>
       <button class="nav-btn" onclick="showPage('profile')">PROFILE</button>
@@ -1766,7 +1766,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       </div>
 
       <div class="stats-row">
-        <div class="stat-card">
+        <div class="stat-card admin-only">
           <div class="stat-label">REGISTERED RACERS</div>
           <div class="stat-value orange" id="stat-racers">—</div>
           <div class="stat-sub">GLOBAL</div>
@@ -1781,7 +1781,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
           <div class="stat-value cyan" id="stat-mybest">—</div>
           <div class="stat-sub">PERSONAL BEST</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card admin-only">
           <div class="stat-label">TIMES TODAY</div>
           <div class="stat-value green" id="stat-sessions">—</div>
           <div class="stat-sub">SUBMITTED TODAY</div>
@@ -1791,7 +1791,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
           <div class="stat-value orange" id="stat-myrank">—</div>
           <div class="stat-sub">AT CIS</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card admin-only">
           <div class="stat-label">TOTAL LAP TIMES</div>
           <div class="stat-value" id="stat-total">—</div>
           <div class="stat-sub">ALL CIRCUITS</div>
@@ -2597,6 +2597,9 @@ function isCurrentUserAdmin() {
 function updateAdminVisibility() {
   const adminBtn = document.getElementById('admin-nav-btn');
   if (adminBtn) adminBtn.style.display = isCurrentUserAdmin() ? '' : 'none';
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isCurrentUserAdmin() ? '' : 'none';
+  });
 }
 
 // ============================================================
@@ -2746,7 +2749,7 @@ auth.onAuthStateChanged(async user => {
 // PAGE NAV
 // ============================================================
 function showPage(name) {
-  if (name === 'admin' && !isCurrentUserAdmin()) {
+  if ((name === 'admin' || name === 'upload') && !isCurrentUserAdmin()) {
     name = 'dashboard';
   }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
