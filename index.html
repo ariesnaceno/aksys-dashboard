@@ -1313,13 +1313,22 @@ nav{
   .lb-full-header,.lb-full-row{min-width:560px;}
 }
 
-/* Phone tier — collapse the dashboard grid to a single column so cards get
-   full width instead of two cramped 180px columns. */
+/* Phone tier — the dashboard uses named grid-areas sized for wide screens; at
+   phone width they collapse into overlapping cells. Drop grid entirely and let
+   every card stack as a full-width block. display:block ignores all grid-area /
+   grid-column assignments, so nothing can share a cell. */
 @media(max-width:600px){
-  .dash-grid{grid-template-columns:1fr!important;grid-template-areas:none!important;}
-  .dash-grid > *{grid-column:1/-1!important;}
-  .download-info h2{font-size:30px!important;}
-  .page-wrap{padding:16px;}
+  .dash-grid{display:block!important;}
+  .dash-grid > *{width:auto!important;margin:0 0 14px 0!important;}
+  .stats-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}
+  .download-card{display:block!important;min-height:0!important;padding:22px 18px!important;}
+  .download-card::after{display:none!important;}   /* giant watermark overflows */
+  .download-info h2{font-size:30px!important;line-height:1.02!important;}
+  .product-tiers{grid-template-columns:1fr!important;}
+  /* Header: brand row on top, badges wrap, nav on its own scroll row. */
+  header{flex-wrap:wrap!important;height:auto!important;padding:10px 14px!important;gap:8px!important;}
+  nav{order:3!important;width:100%!important;overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;}
+  .nav-btn{white-space:nowrap!important;flex:0 0 auto!important;}
 }
 
 /* ── Restore Original Dark Theme Selector Behavior ───────────────────────────
