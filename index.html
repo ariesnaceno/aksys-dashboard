@@ -7,6 +7,7 @@
 <meta name="description" content="GPS lap timing, Apple Watch telemetry, leaderboard uploads, and live pit wall tools for Philippine motorsport. Built for CIS, BRC, CRT, and more local circuits.">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="1024x1024" href="assets/app-icon-1024.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="AKSYS LapTimer — GPS Lap Timing for Philippine Motorsport">
 <meta property="og:description" content="GPS lap timing, Apple Watch telemetry, leaderboard uploads, and live pit wall tools for Philippine motorsport.">
@@ -129,11 +130,12 @@ body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(v
 /* HEADER */
 header{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px;background:rgba(0,0,0,0.4);position:sticky;top:0;z-index:100;backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-bottom:1px solid var(--border2);}
 .header-logo{display:flex;align-items:center;gap:12px;text-decoration:none;}
-.logo-icon{width:32px;height:32px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-weight:900;font-size:14px;color:#fff;border-radius:8px;}
+.logo-icon{width:32px;height:32px;background:#050505;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.14) inset;}
+.logo-icon img{width:100%;height:100%;display:block;object-fit:cover;}
 .logo-text .brand{font-size:8px;letter-spacing:3px;color:var(--orange);font-weight:700;font-family:'Inter',sans-serif;}
 .logo-text .name{font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.3px;line-height:1;}
 nav{display:flex;gap:2px;}
-.nav-btn{padding:0 16px;height:56px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2px;transition:all .2s;}
+.nav-btn{padding:0 16px;height:56px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2px;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;}
 .nav-btn:hover,.nav-btn.active{color:var(--orange);border-bottom-color:var(--orange);}
 .header-right{display:flex;align-items:center;gap:12px;}
 .live-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid rgba(0,230,118,0.3);background:rgba(0,230,118,0.05);font-size:11px;color:var(--green);letter-spacing:2px;font-weight:700;}
@@ -518,7 +520,7 @@ header{
 }
 .logo-icon{
   border-radius:6px;
-  transform:skew(-7deg);
+  transform:none;
   box-shadow:0 0 0 1px rgba(255,255,255,.14) inset;
 }
 .logo-text .brand,.auth-logo .brand{letter-spacing:4px;}
@@ -818,8 +820,7 @@ header{
   width:38px;height:38px;
   border-radius:8px;
   transform:none;
-  background:var(--accent);
-  color:#fff;
+  background:#050505;
 }
 .logo-text .brand{
   color:var(--accent);
@@ -1115,8 +1116,6 @@ header{
   width:42px;
   height:42px;
   border-radius:10px;
-  font-family:'Rajdhani',sans-serif;
-  font-size:18px;
 }
 .logo-text .brand{
   line-height:1;
@@ -1622,7 +1621,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
 <div id="app">
   <header>
     <div class="header-logo">
-      <div class="logo-icon">AK</div>
+      <div class="logo-icon"><img src="assets/app-icon-1024.png" alt="AKSYS LapTimer icon"></div>
       <div class="logo-text">
         <div class="brand">AKSYS</div>
         <div class="name">LapTimer</div>
@@ -1637,64 +1636,12 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <button class="nav-btn" id="admin-nav-btn" onclick="showPage('admin')" style="display:none;">ADMIN</button>
       <button class="nav-btn" onclick="showPage('features')">FEATURES</button>
       <button class="nav-btn" onclick="showPage('profile')">PROFILE</button>
+      <a class="nav-btn" href="https://facebook.com/aksyslaptimer" target="_blank" rel="noopener noreferrer" aria-label="Open AKSYS LapTimer on Facebook">FACEBOOK</a>
       
     </nav>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div>LIVE</div>
 
-      <!-- Theme Switcher -->
-      <div class="theme-switcher" id="theme-switcher" onclick="toggleThemeMenu(event)" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
-        <div class="theme-dot"></div>
-        <span class="theme-switcher-label" id="active-theme-label">DUCATI</span>
-        <span style="color:var(--muted);font-size:9px;">▾</span>
-        <div class="theme-dropdown">
-          <div class="theme-option active" id="opt-ducati" onclick="chooseTheme(event,'ducati')">
-            <div class="theme-swatches">
-              <div class="theme-swatch" style="background:#120000;border:1px solid rgba(255,255,255,0.2)"></div>
-              <div class="theme-swatch" style="background:#E8000D"></div>
-              <div class="theme-swatch" style="background:#FFB800"></div>
-            </div>
-            <div><div class="theme-name">Ducati Factory</div><div class="theme-tag">BORGO PANIGALE</div></div>
-            <span class="theme-check" id="check-ducati"><svg class="icon"><use href="#icon-check"/></svg></span>
-          </div>
-          <div class="theme-option" id="opt-magneti" onclick="chooseTheme(event,'magneti')">
-            <div class="theme-swatches">
-              <div class="theme-swatch" style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.2)"></div>
-              <div class="theme-swatch" style="background:#00FF88"></div>
-              <div class="theme-swatch" style="background:#00B4FF"></div>
-            </div>
-            <div><div class="theme-name">Magneti Marelli</div><div class="theme-tag">CLASSIC ECU</div></div>
-            <span class="theme-check" id="check-magneti" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
-          </div>
-          <div class="theme-option" id="opt-pitwall" onclick="chooseTheme(event,'pitwall')">
-            <div class="theme-swatches">
-              <div class="theme-swatch" style="background:#0D0D1A;border:1px solid rgba(255,255,255,0.2)"></div>
-              <div class="theme-swatch" style="background:#FF3B00"></div>
-              <div class="theme-swatch" style="background:#00CFFF"></div>
-            </div>
-            <div><div class="theme-name">Pit Wall</div><div class="theme-tag">MOTOGP BROADCAST</div></div>
-            <span class="theme-check" id="check-pitwall" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
-          </div>
-          <div class="theme-option" id="opt-yamaha" onclick="chooseTheme(event,'yamaha')">
-            <div class="theme-swatches">
-              <div class="theme-swatch" style="background:#0A0F1A;border:1px solid rgba(255,255,255,0.2)"></div>
-              <div class="theme-swatch" style="background:#1E6FD9"></div>
-              <div class="theme-swatch" style="background:#BFD0E8"></div>
-            </div>
-            <div><div class="theme-name">Yamaha M1</div><div class="theme-tag">IWATA FACTORY</div></div>
-            <span class="theme-check" id="check-yamaha" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
-          </div>
-          <div class="theme-option" id="opt-motogp" onclick="chooseTheme(event,'motogp')">
-            <div class="theme-swatches">
-              <div class="theme-swatch" style="background:#FFFFFF;border:1px solid rgba(0,0,0,0.2)"></div>
-              <div class="theme-swatch" style="background:#030303"></div>
-              <div class="theme-swatch" style="background:#E50914"></div>
-            </div>
-            <div><div class="theme-name">MotoGP Grid</div><div class="theme-tag">LIGHT CALENDAR</div></div>
-            <span class="theme-check" id="check-motogp" style="display:none"><svg class="icon"><use href="#icon-check"/></svg></span>
-          </div>
-        </div>
-      </div>
 
       <div class="user-badge">
         <div class="user-avatar-sm" id="header-avatar">?</div>
@@ -1900,27 +1847,10 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <div class="events-card">
         <div class="section-header">
           <div class="section-title">UPCOMING EVENTS</div>
-          <span style="font-size:11px;color:var(--muted);letter-spacing:1px;">clarkinternationalspeedway.com</span>
+          <span style="font-size:11px;color:var(--muted);letter-spacing:1px;">LIVE FROM AKSYS RACE CONTROL</span>
         </div>
-        <div class="event-row">
-          <div class="event-date"><div class="event-day">26</div><div class="event-month">APR</div></div>
-          <div class="event-info"><div class="event-title">Philippine Superbike Championship</div><div class="event-meta">Clark International Speedway, Pampanga</div></div>
-          <div class="event-type moto">MOTO</div>
-        </div>
-        <div class="event-row">
-          <div class="event-date"><div class="event-day">10</div><div class="event-month">MAY</div></div>
-          <div class="event-info"><div class="event-title">Toyota Vios Cup Round 2</div><div class="event-meta">Clark International Speedway, Pampanga</div></div>
-          <div class="event-type car">CAR</div>
-        </div>
-        <div class="event-row">
-          <div class="event-date"><div class="event-day">18</div><div class="event-month">MAY</div></div>
-          <div class="event-info"><div class="event-title">FlatOut Race Series</div><div class="event-meta">Batangas Racing Circuit, Batangas</div></div>
-          <div class="event-type car">CAR</div>
-        </div>
-        <div class="event-row">
-          <div class="event-date"><div class="event-day">01</div><div class="event-month">JUN</div></div>
-          <div class="event-info"><div class="event-title">Track Day Open Practice</div><div class="event-meta">Clark International Speedway, Pampanga</div></div>
-          <div class="event-type open">OPEN</div>
+        <div id="upcoming-events-list">
+          <div class="empty-state"><div class="empty-text">LOADING EVENTS</div></div>
         </div>
       </div>
 
@@ -2078,6 +2008,36 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       </div>
       <div class="mini-table" style="margin-top:16px;" id="admin-recent">
         <div class="empty-state"><div class="empty-text">LOADING RECENT SUBMISSIONS</div></div>
+      </div>
+      <div class="mini-table" style="margin-top:16px;">
+        <div class="section-header">
+          <div class="section-title">TRACK EVENTS</div>
+          <span class="status-pill">APP AUTO UPDATE</span>
+        </div>
+        <div class="info-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;">
+          <input id="event-title-input" placeholder="Event title" style="padding:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:10px;">
+          <input id="event-date-input" type="date" style="padding:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:10px;">
+          <select id="event-location-input" style="padding:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:10px;">
+            <option value="CIS">CIS</option>
+            <option value="BRC">BRC</option>
+            <option value="CRT">CRT</option>
+            <option value="CISK">CISK</option>
+            <option value="CKRP">CKRP</option>
+            <option value="CKT">CKT</option>
+            <option value="TAR">TAR</option>
+          </select>
+          <select id="event-type-input" style="padding:12px;border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:10px;">
+            <option value="Motorcycle">Motorcycle</option>
+            <option value="Car">Car</option>
+            <option value="Open">Open</option>
+            <option value="Trackday">Trackday</option>
+            <option value="Race">Race</option>
+          </select>
+        </div>
+        <button class="primary-btn" onclick="saveTrackEvent()">ADD EVENT</button>
+        <div id="admin-events" style="margin-top:12px;">
+          <div class="empty-state"><div class="empty-text">LOADING EVENTS</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2510,67 +2470,8 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
 </div>
 
 <script>
-// ============================================================
-// THEME SYSTEM
-// ============================================================
-const THEMES = {
-  ducati:  { label:'DUCATI',   cls:'theme-ducati',  name:'Ducati Factory' },
-  magneti: { label:'MAGNETI',  cls:'theme-magneti', name:'Magneti Marelli' },
-  pitwall: { label:'PIT WALL', cls:'theme-pitwall', name:'Pit Wall' },
-  yamaha:  { label:'YAMAHA',   cls:'theme-yamaha',  name:'Yamaha M1' },
-  motogp:  { label:'MOTOGP',   cls:'theme-motogp',  name:'MotoGP Grid' }
-};
-
-function setTheme(key) {
-  const theme = THEMES[key];
-  if (!theme) return;
-  // Remove all theme classes, apply new one
-  document.body.classList.remove('theme-ducati','theme-magneti','theme-pitwall','theme-yamaha','theme-motogp');
-  if (theme.cls) document.body.classList.add(theme.cls);
-  // Update label
-  document.getElementById('active-theme-label').textContent = theme.label;
-  // Update checkmarks + active state
-  Object.keys(THEMES).forEach(k => {
-    const opt   = document.getElementById('opt-' + k);
-    const check = document.getElementById('check-' + k);
-    if (opt)   opt.classList.toggle('active', k === key);
-    if (check) check.style.display = k === key ? 'block' : 'none';
-  });
-  localStorage.setItem('aksys_theme', key);
-}
-
-function toggleThemeMenu(event) {
-  event.stopPropagation();
-  const switcher = document.getElementById('theme-switcher');
-  if (!switcher) return;
-  const isOpen = switcher.classList.toggle('open');
-  switcher.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-}
-
-function closeThemeMenu() {
-  const switcher = document.getElementById('theme-switcher');
-  if (!switcher) return;
-  switcher.classList.remove('open');
-  switcher.setAttribute('aria-expanded', 'false');
-}
-
-function chooseTheme(event, key) {
-  event.stopPropagation();
-  setTheme(key);
-  closeThemeMenu();
-}
-
-function loadTheme() {
-  const saved = localStorage.getItem('aksys_theme') || 'ducati';
-  setTheme(saved);
-}
-
-// Apply theme immediately on load
-loadTheme();
-document.addEventListener('click', closeThemeMenu);
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeThemeMenu();
-});
+// Theme switching removed — locked to the default MotoGP Grid look.
+document.body.classList.add('theme-motogp');
 
 // ============================================================
 // FIREBASE CONFIG
@@ -2588,6 +2489,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 let currentUser = null, currentUserData = null;
+let trackEventsUnsub = null;
 const ADMIN_EMAILS = ['ariesnaceno@yahoo.com'];
 
 function isCurrentUserAdmin() {
@@ -2735,10 +2637,12 @@ auth.onAuthStateChanged(async user => {
     loadDashboard();
     renderCircuitsPage();
     loadWeather();
+    listenToTrackEvents();
     switchCircuit('CIS', document.querySelector('.circuit-tab.active'));
     startRealtimeListener();
   } else {
     currentUser = null; currentUserData = null;
+    if (trackEventsUnsub) { trackEventsUnsub(); trackEventsUnsub = null; }
     updateAdminVisibility();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
@@ -3042,6 +2946,116 @@ async function loadDashboard() {
   } catch(e) {
     document.getElementById('dashboard-lb').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET — BE THE FIRST!</div></div>';
   }
+}
+
+const defaultTrackEvents = [
+  { id:'psbk-2026-04-26', title:'Philippine Superbike Championship', location:'CIS', type:'Motorcycle', date:'2026-04-26' },
+  { id:'vios-2026-05-10', title:'Toyota Vios Cup Round 2', location:'CIS', type:'Car', date:'2026-05-10' },
+  { id:'flatout-2026-05-18', title:'FlatOut Race Series', location:'BRC', type:'Car', date:'2026-05-18' },
+  { id:'trackday-2026-06-01', title:'Track Day Open Practice', location:'CIS', type:'Open', date:'2026-06-01' }
+];
+
+function eventDateParts(eventDate) {
+  const date = eventDate?.toDate?.() || (eventDate instanceof Date ? eventDate : null);
+  if (!date) return { day:'--', month:'---', sort:0 };
+  return {
+    day: String(date.getDate()).padStart(2, '0'),
+    month: date.toLocaleString('en-US', { month:'short' }).toUpperCase(),
+    sort: date.getTime()
+  };
+}
+
+function eventTypeClass(type) {
+  const t = String(type || '').toLowerCase();
+  if (t.includes('car')) return 'car';
+  if (t.includes('open') || t.includes('track')) return 'open';
+  return 'moto';
+}
+
+function renderTrackEvents(events) {
+  const sorted = [...events].sort((a,b) => eventDateParts(a.eventDate).sort - eventDateParts(b.eventDate).sort);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcoming = sorted.filter(e => eventDateParts(e.eventDate).sort >= today.getTime());
+  const list = document.getElementById('upcoming-events-list');
+  if (list) {
+    list.innerHTML = upcoming.length ? upcoming.map(e => {
+      const d = eventDateParts(e.eventDate);
+      return `<div class="event-row">
+        <div class="event-date"><div class="event-day">${d.day}</div><div class="event-month">${d.month}</div></div>
+        <div class="event-info"><div class="event-title">${escapeHtml(e.title || 'Untitled event')}</div><div class="event-meta">${escapeHtml(e.location || '—')}</div></div>
+        <div class="event-type ${eventTypeClass(e.type)}">${escapeHtml(String(e.type || 'EVENT').toUpperCase())}</div>
+      </div>`;
+    }).join('') : '<div class="empty-state"><div class="empty-text">NO UPCOMING EVENTS</div></div>';
+  }
+  const adminList = document.getElementById('admin-events');
+  if (adminList && isCurrentUserAdmin()) {
+    adminList.innerHTML = sorted.length ? sorted.map(e => {
+      const d = eventDateParts(e.eventDate);
+      return `<div class="mini-row">
+        <div><strong>${escapeHtml(e.title || 'Untitled event')}</strong><div class="driver-meta">${d.day} ${d.month} · ${escapeHtml(e.location || '—')} · ${escapeHtml(e.type || '—')}</div></div>
+        <button class="ghost-btn" onclick="deleteTrackEvent('${escapeAttr(e.id)}')">DELETE</button>
+      </div>`;
+    }).join('') : '<div class="empty-state"><div class="empty-text">NO EVENTS CONFIGURED</div></div>';
+  }
+}
+
+async function seedDefaultTrackEventsIfEmpty() {
+  if (!isCurrentUserAdmin()) return;
+  const snap = await db.collection('trackEvents').limit(1).get();
+  if (!snap.empty) return;
+  await Promise.all(defaultTrackEvents.map(e => db.collection('trackEvents').doc(e.id).set({
+    title: e.title,
+    location: e.location,
+    type: e.type,
+    eventDate: firebase.firestore.Timestamp.fromDate(new Date(e.date + 'T00:00:00+08:00')),
+    isPublished: true,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge:true })));
+}
+
+async function listenToTrackEvents() {
+  try { await seedDefaultTrackEventsIfEmpty(); } catch(e) {}
+  if (trackEventsUnsub) trackEventsUnsub();
+  trackEventsUnsub = db.collection('trackEvents')
+    .orderBy('eventDate', 'asc')
+    .onSnapshot(snap => {
+      const events = [];
+      snap.forEach(doc => {
+        const event = { id:doc.id, ...doc.data() };
+        if (event.isPublished === true) events.push(event);
+      });
+      renderTrackEvents(events);
+    }, () => renderTrackEvents([]));
+}
+
+async function saveTrackEvent() {
+  if (!isCurrentUserAdmin()) return alert('Admin only');
+  const title = document.getElementById('event-title-input').value.trim();
+  const date = document.getElementById('event-date-input').value;
+  const location = document.getElementById('event-location-input').value;
+  const type = document.getElementById('event-type-input').value;
+  if (!title || !date) return alert('Enter event title and date');
+  await db.collection('trackEvents').add({
+    title,
+    location,
+    type,
+    eventDate: firebase.firestore.Timestamp.fromDate(new Date(date + 'T00:00:00+08:00')),
+    isPublished: true,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.getElementById('event-title-input').value = '';
+  document.getElementById('event-date-input').value = '';
+}
+
+async function deleteTrackEvent(id) {
+  if (!isCurrentUserAdmin()) return alert('Admin only');
+  await db.collection('trackEvents').doc(id).set({
+    isPublished: false,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge:true });
 }
 
 function switchLbCircuit(circuit, el, context) {
