@@ -1308,6 +1308,18 @@ nav{
   .dl-badge{width:100%;}
   .circuit-tabs,.lb-tabs,.lb-full-filters{overflow-x:auto;flex-wrap:nowrap;}
   .circuit-tab,.lb-tab,.filter-tab{white-space:nowrap;}
+  /* Leaderboard table keeps its columns and scrolls instead of clipping. */
+  .lb-full-table{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .lb-full-header,.lb-full-row{min-width:560px;}
+}
+
+/* Phone tier — collapse the dashboard grid to a single column so cards get
+   full width instead of two cramped 180px columns. */
+@media(max-width:600px){
+  .dash-grid{grid-template-columns:1fr!important;grid-template-areas:none!important;}
+  .dash-grid > *{grid-column:1/-1!important;}
+  .download-info h2{font-size:30px!important;}
+  .page-wrap{padding:16px;}
 }
 
 /* ── Restore Original Dark Theme Selector Behavior ───────────────────────────
