@@ -321,7 +321,7 @@ nav{display:flex;gap:2px;}
 .download-card::after{content:'AKSYS LAPTIMER';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-family:'Inter',-apple-system,sans-serif;font-size:80px;font-weight:900;color:rgba(255,107,0,0.04);letter-spacing:8px;white-space:nowrap;pointer-events:none;}
 .download-info h2{font-family:'Inter',-apple-system,sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;}
 .download-info p{font-size:14px;color:var(--muted2);margin-top:6px;}
-.product-tiers{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:10px;margin-top:16px;max-width:720px;}
+.product-tiers{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:10px;margin-top:16px;max-width:980px;}
 .tier-card{background:rgba(255,255,255,0.035);border:1px solid var(--border2);border-radius:12px;padding:14px;position:relative;}
 .tier-card.pro{border-color:rgba(255,107,0,0.42);background:rgba(255,107,0,0.055);}
 .tier-name{font-size:12px;font-weight:900;letter-spacing:2px;color:var(--text);text-transform:uppercase;margin-bottom:6px;}
@@ -1149,7 +1149,7 @@ nav{
   max-width:960px;
 }
 .product-tiers{
-  max-width:780px;
+  max-width:980px;
 }
 .tier-card{
   box-shadow:none;
@@ -1690,7 +1690,7 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
             <span style="background:rgba(0,230,118,0.15);border:1px solid rgba(0,230,118,0.4);color:#00E676;font-size:9px;font-weight:800;letter-spacing:2px;padding:3px 10px;border-radius:var(--radius-pill);display:inline-flex;align-items:center;gap:5px;"><span class="status-dot" style="background:#00E676;"></span>NOW LIVE</span>
             <span style="background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.3);color:var(--orange);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:var(--radius-pill);">PH LAUNCH · 30-DAY TRIAL</span>
           </div>
-          <p>Professional GPS lap timing for Philippine motorsport — iPhone and Apple Watch timing, automatic circuit detection, live telemetry, and leaderboard uploads for trackday riders.</p>
+          <p>Professional GPS lap timing for Philippine motorsport — base lap timing with a one-time unlock, plus a Pro subscription for live pit wall and advanced telemetry.</p>
           <div class="product-tiers">
             <div class="tier-card">
               <div class="tier-pill">TRACKDAY TRIAL</div>
@@ -1698,11 +1698,17 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
               <div class="tier-price">30 days free</div>
               <div class="tier-copy">Full GPS lap timing, Apple Watch telemetry, CIS/BRC/CRT auto-detect, Test Mode, route logging, and leaderboard uploads during the launch trial.</div>
             </div>
-            <div class="tier-card pro">
+            <div class="tier-card">
               <div class="tier-pill">FULL UNLOCK</div>
               <div class="tier-name">AKSYS LapTimer</div>
               <div class="tier-price">₱999 one-time</div>
-              <div class="tier-copy">Keep using the app after trial expiry. Paid riders keep leaderboard visibility, live pit wall sharing, session history, Apple Health BPM, and full telemetry analysis.</div>
+              <div class="tier-copy">Keep using GPS lap timing after trial expiry. Paid riders keep leaderboard visibility, session history, Test Mode, exports, and Apple Watch timing.</div>
+            </div>
+            <div class="tier-card pro">
+              <div class="tier-pill">PRO SUBSCRIPTION</div>
+              <div class="tier-name">AKSYS LapTimer Pro</div>
+              <div class="tier-price">Subscription</div>
+              <div class="tier-copy">Adds live pit wall sharing, cloud telemetry, ghost lap pipeline, sector timing, advanced analysis, team tools, and PDF/report exports.</div>
             </div>
           </div>
         </div>
@@ -2009,6 +2015,20 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
             <button class="ghost-btn" onclick="showPage('leaderboard')">VIEW LEADERBOARD</button>
           </div>
         </div>
+        <div class="info-card">
+          <div class="info-label">Export Center</div>
+          <div class="info-sub">Download browser exports from uploaded AKSYS app sessions and imported laps. Full GPS point packages still come from the iOS app session export.</div>
+          <div class="action-row" style="margin-top:14px;">
+            <button class="ghost-btn" onclick="exportMySessionsCsv()">EXPORT MY SESSIONS CSV</button>
+            <button class="ghost-btn" onclick="exportCurrentLeaderboardCsv()">EXPORT LEADERBOARD CSV</button>
+            <span id="export-status" class="status-pill">READY</span>
+          </div>
+          <div class="info-grid" style="margin-top:14px;">
+            <div class="info-card"><div class="info-label">My Sessions</div><div class="status-pill good">CSV</div><div class="info-sub">All lap submissions under your signed-in account.</div></div>
+            <div class="info-card"><div class="info-label">Leaderboard</div><div class="status-pill good">CSV</div><div class="info-sub">Current circuit/category ranking with import status.</div></div>
+            <div class="info-card"><div class="info-label">Session Detail</div><div class="status-pill good">JSON + CSV</div><div class="info-sub">Open any session detail and export that row.</div></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2085,6 +2105,10 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
         <p class="page-copy" id="session-copy">Lap details, timing source, and telemetry summary.</p>
       </div>
       <div class="info-grid" id="session-stats"></div>
+      <div class="action-row" id="session-export-actions" style="display:none;margin-top:16px;">
+        <button class="ghost-btn" onclick="exportOpenSessionCsv()">EXPORT SESSION CSV</button>
+        <button class="ghost-btn" onclick="exportOpenSessionJson()">EXPORT SESSION JSON</button>
+      </div>
       <div class="info-card" style="margin-top:16px;">
         <div class="info-label">Route Map</div>
         <div class="info-sub">GPS route rendering will be added when the website receives full track-point payloads from app session exports.</div>
@@ -2511,6 +2535,7 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 let currentUser = null, currentUserData = null;
 let trackEventsUnsub = null;
+let sessionSyncUnsub = null;
 const ADMIN_EMAILS = ['ariesnaceno@yahoo.com'];
 
 function isCurrentUserAdmin() {
@@ -2664,6 +2689,7 @@ auth.onAuthStateChanged(async user => {
   } else {
     currentUser = null; currentUserData = null;
     if (trackEventsUnsub) { trackEventsUnsub(); trackEventsUnsub = null; }
+    if (sessionSyncUnsub) { sessionSyncUnsub(); sessionSyncUnsub = null; }
     updateAdminVisibility();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
@@ -2868,15 +2894,16 @@ setInterval(updateTrackDateTime, 1000 * 30);
 async function loadStats() {
   try {
     const today = new Date(); today.setHours(0,0,0,0);
-    const [racers, laps, sessionsToday] = await Promise.all([
+    const [racers, laps, appSessionsToday, legacySessionsToday] = await Promise.all([
       db.collection('users').count().get(),
       db.collection('laptimes').count().get(),
+      db.collection('sessions').where('date','>=',today).count().get().catch(() => null),
       db.collection('laptimes').where('submittedAt','>=',today).count().get()
     ]);
     return {
       totalRacers:  racers.data().count,
       totalLaps:    laps.data().count,
-      sessionsToday: sessionsToday.data().count
+      sessionsToday: appSessionsToday?.data?.().count ?? legacySessionsToday.data().count
     };
   } catch (e) {
     return { totalRacers: '—', totalLaps: '—', sessionsToday: '—' };
@@ -2951,22 +2978,33 @@ async function loadDashboard() {
 
     renderLeaderboard('dashboard-lb', times, 10);
 
-    // Recent 5 submissions
-    const recentSnap = await db.collection('laptimes').orderBy('submittedAt','desc').limit(5).get();
-    const recent = []; recentSnap.forEach(d => recent.push({id:d.id,...d.data()}));
+    const recent = await loadRecentSyncedSessions(5);
     document.getElementById('recent-sessions').innerHTML = recent.length===0
       ? '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO SESSIONS YET</div></div>'
       : recent.map(s=>`
-        <div class="lb-row ${s.userId===currentUser?.uid?'mine':''}">
+        <div class="lb-row ${s.userId===currentUser?.uid?'mine':''}" ${s.detailCollection ? `onclick="openSyncedSessionDetail('${escapeAttr(s.detailCollection)}','${escapeAttr(s.id)}')" style="cursor:pointer;"` : ''}>
           <div class="driver-info" style="flex:1;">
             <div class="driver-name">${s.displayName||'ANON'}</div>
-            <div class="driver-meta">${(s.circuit||'').replace('Clark International Speedway','CIS').replace('Batangas Racing Circuit','BRC').replace('Carmona Race Track','CRT')} · ${s.submittedAt?.toDate?.()?.toLocaleDateString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})||'—'}</div>
+            <div class="driver-meta">${(s.circuit||s.trackName||'').replace('Clark International Speedway','CIS').replace('Batangas Racing Circuit','BRC').replace('Carmona Race Track','CRT')} · ${(s.submittedAt||s.date||s.updatedAt)?.toDate?.()?.toLocaleDateString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})||'—'} · ${escapeHtml(s.source||'app')}</div>
           </div>
-          <div class="lap-time ${s.userId===currentUser?.uid?'orange':''}">${formatLapTime(s.lapSeconds)}</div>
+          <div class="lap-time ${s.userId===currentUser?.uid?'orange':''}">${formatLapTime(s.lapSeconds ?? s.bestLapSeconds)}</div>
         </div>`).join('');
   } catch(e) {
     document.getElementById('dashboard-lb').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET — BE THE FIRST!</div></div>';
   }
+}
+
+async function loadRecentSyncedSessions(limitCount = 5) {
+  try {
+    const snap = await db.collection('sessions').orderBy('date','desc').limit(limitCount).get();
+    const rows = [];
+    snap.forEach(d => rows.push({id:d.id, detailCollection:'sessions', ...d.data()}));
+    if (rows.length) return rows;
+  } catch(e) {}
+  const recentSnap = await db.collection('laptimes').orderBy('submittedAt','desc').limit(limitCount).get();
+  const recent = [];
+  recentSnap.forEach(d => recent.push({id:d.id, detailCollection:'laptimes', ...d.data()}));
+  return recent;
 }
 
 const defaultTrackEvents = [
@@ -3292,6 +3330,7 @@ function renderLiveRiderCard(r) {
 // ============================================================
 let pendingImportedLaps = [];
 let sqlJsPromise = null;
+let currentOpenSession = null;
 
 async function handleImportFile(event) {
   const file = event.target.files?.[0];
@@ -3473,6 +3512,130 @@ async function upsertImportedBestLap(laps, meta) {
 }
 
 // ============================================================
+// EXPORT CENTER
+// ============================================================
+function setExportStatus(text, good = true) {
+  const status = document.getElementById('export-status');
+  if (!status) return;
+  status.className = good ? 'status-pill good' : 'status-pill warn';
+  status.textContent = text;
+}
+
+function sanitizeFilePart(value) {
+  return String(value || 'export')
+    .replace(/[^a-z0-9_-]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64) || 'export';
+}
+
+function timestampForFile() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+function csvEscape(value) {
+  if (value == null) return '';
+  const text = value?.toDate?.() ? value.toDate().toISOString() : String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function rowsToCsv(headers, rows) {
+  return [
+    headers.join(','),
+    ...rows.map(row => headers.map(h => csvEscape(row[h])).join(','))
+  ].join('\n') + '\n';
+}
+
+function normalizeLapExportRow(row) {
+  return {
+    sessionId: row.id || '',
+    submittedAt: row.submittedAt?.toDate?.()?.toISOString?.() || '',
+    displayName: row.displayName || '',
+    circuit: row.circuit || '',
+    vehicleType: row.vehicleType || '',
+    vehicle: row.vehicle || row.vehicleModel || '',
+    lapSeconds: typeof row.lapSeconds === 'number' ? row.lapSeconds.toFixed(3) : row.lapSeconds || '',
+    lapTime: formatLapTime(row.lapSeconds),
+    topSpeedKmh: row.topSpeed || '',
+    gpsAccuracyM: row.gpsAccuracy || '',
+    timingMode: row.timingMode || '',
+    source: row.source || 'app',
+    verificationStatus: row.verificationStatus || (row.isOfficial === false ? 'imported' : 'app_verified'),
+    isOfficial: row.isOfficial === false ? 'false' : 'true',
+    isTestMode: row.isTestMode ? 'true' : 'false'
+  };
+}
+
+function downloadTextFile(fileName, mimeType, text) {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function exportMySessionsCsv() {
+  if (!currentUser) return setExportStatus('SIGN IN FIRST', false);
+  setExportStatus('EXPORTING', true);
+  try {
+    const snap = await db.collection('laptimes')
+      .where('userId','==',currentUser.uid)
+      .limit(500)
+      .get();
+    const rows = [];
+    snap.forEach(doc => rows.push(normalizeLapExportRow({ id:doc.id, ...doc.data() })));
+    rows.sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+    if (!rows.length) return setExportStatus('NO SESSIONS', false);
+    const headers = Object.keys(rows[0]);
+    downloadTextFile(`AKSYS_my_sessions_${timestampForFile()}.csv`, 'text/csv;charset=utf-8', rowsToCsv(headers, rows));
+    setExportStatus('DOWNLOADED', true);
+  } catch(e) {
+    setExportStatus('EXPORT FAILED', false);
+  }
+}
+
+async function exportCurrentLeaderboardCsv() {
+  setExportStatus('EXPORTING', true);
+  try {
+    let times = await loadLeaderboardTimes(currentFullCircuit, currentFullCategory);
+    times = applyLeaderboardFilters(times);
+    const rows = times.map((row, index) => ({
+      position: index + 1,
+      ...normalizeLapExportRow(row),
+      deltaToBest: index === 0 ? '0.000' : (row.lapSeconds - times[0].lapSeconds).toFixed(3)
+    }));
+    if (!rows.length) return setExportStatus('NO ENTRIES', false);
+    const headers = Object.keys(rows[0]);
+    const name = `AKSYS_leaderboard_${sanitizeFilePart(currentFullCircuit)}_${sanitizeFilePart(currentFullCategory)}_${timestampForFile()}.csv`;
+    downloadTextFile(name, 'text/csv;charset=utf-8', rowsToCsv(headers, rows));
+    setExportStatus('DOWNLOADED', true);
+  } catch(e) {
+    setExportStatus('EXPORT FAILED', false);
+  }
+}
+
+function exportOpenSessionCsv() {
+  if (!currentOpenSession) return;
+  const row = normalizeLapExportRow(currentOpenSession);
+  downloadTextFile(`AKSYS_session_${sanitizeFilePart(currentOpenSession.id)}.csv`, 'text/csv;charset=utf-8', rowsToCsv(Object.keys(row), [row]));
+}
+
+function exportOpenSessionJson() {
+  if (!currentOpenSession) return;
+  const replacer = (_, value) => value?.toDate?.() ? value.toDate().toISOString() : value;
+  downloadTextFile(
+    `AKSYS_session_${sanitizeFilePart(currentOpenSession.id)}.json`,
+    'application/json;charset=utf-8',
+    JSON.stringify(currentOpenSession, replacer, 2)
+  );
+}
+
+// ============================================================
 // ADMIN / DETAIL PAGES
 // ============================================================
 async function loadAdminDashboard() {
@@ -3535,21 +3698,33 @@ async function openRiderDetail(userId, fallbackName) {
 }
 
 async function openSessionDetail(id) {
+  return openSyncedSessionDetail('laptimes', id);
+}
+
+async function openSyncedSessionDetail(collectionName, id) {
   showPage('session');
+  currentOpenSession = null;
+  const exportActions = document.getElementById('session-export-actions');
+  if (exportActions) exportActions.style.display = 'none';
   try {
-    const doc = await db.collection('laptimes').doc(id).get();
+    const doc = await db.collection(collectionName || 'laptimes').doc(id).get();
     if (!doc.exists) throw new Error('missing session');
     const s = {id:doc.id,...doc.data()};
-    document.getElementById('session-title').textContent = `${escapeHtml(s.displayName||'Session')} · ${formatLapTime(s.lapSeconds)}`;
-    document.getElementById('session-copy').textContent = `${s.circuit||'Track'} · ${s.submittedAt?.toDate?.()?.toLocaleString('en-PH')||'—'}`;
+    currentOpenSession = s;
+    const bestSeconds = s.lapSeconds ?? s.bestLapSeconds;
+    const sessionDate = s.submittedAt || s.date || s.updatedAt;
+    document.getElementById('session-title').textContent = `${escapeHtml(s.displayName||'Session')} · ${formatLapTime(bestSeconds)}`;
+    document.getElementById('session-copy').textContent = `${s.circuit||s.trackName||'Track'} · ${sessionDate?.toDate?.()?.toLocaleString('en-PH')||'—'}`;
     document.getElementById('session-stats').innerHTML = `
-      <div class="info-card"><div class="info-label">Lap Time</div><div class="info-value">${formatLapTime(s.lapSeconds)}</div></div>
+      <div class="info-card"><div class="info-label">Best Lap</div><div class="info-value">${formatLapTime(bestSeconds)}</div></div>
       <div class="info-card"><div class="info-label">Vehicle</div><div class="info-value">${escapeHtml(s.vehicle||s.vehicleType||'—')}</div></div>
       <div class="info-card"><div class="info-label">Top Speed</div><div class="info-value">${s.topSpeed ? s.topSpeed+' km/h' : '—'}</div></div>
-      <div class="info-card"><div class="info-label">Accuracy</div><div class="info-value">${s.gpsAccuracy ? '±'+Math.round(s.gpsAccuracy)+'m' : '—'}</div><div class="info-sub">GPS/timing accuracy should be uploaded by app session payloads.</div></div>
-      <div class="info-card"><div class="info-label">Timing Mode</div><div class="info-value">${escapeHtml(s.timingMode||s.source||'App')}</div><div class="info-sub">Virtual finish-line crossing where supported.</div></div>
+      <div class="info-card"><div class="info-label">Accuracy</div><div class="info-value">${s.averageGpsAccuracy ? '±'+Math.round(s.averageGpsAccuracy)+'m' : (s.gpsAccuracy ? '±'+Math.round(s.gpsAccuracy)+'m' : '—')}</div><div class="info-sub">Synced from app session GPS quality.</div></div>
+      <div class="info-card"><div class="info-label">Timing Source</div><div class="info-value">${escapeHtml(s.gpsSource||s.timingMode||s.source||'App')}</div><div class="info-sub">Virtual finish-line crossing where supported.</div></div>
       <div class="info-card"><div class="info-label">Test Mode</div><div class="info-value">${s.isTestMode ? 'YES' : 'NO'}</div></div>
+      <div class="info-card"><div class="info-label">Laps</div><div class="info-value">${s.lapCount || s.totalLaps || '—'}</div></div>
       <div class="info-card"><div class="info-label">Leaderboard Status</div><div class="info-value">${s.isOfficial === false || s.verificationStatus === 'imported' ? 'IMPORTED' : 'APP VERIFIED'}</div><div class="info-sub">${s.isOfficial === false || s.verificationStatus === 'imported' ? 'Shown separately from official app-recorded laps.' : 'Recorded by AKSYS LapTimer app session flow.'}</div></div>`;
+    if (exportActions) exportActions.style.display = 'flex';
   } catch(e) {
     document.getElementById('session-copy').textContent = 'Session detail unavailable.';
   }
@@ -3560,6 +3735,15 @@ async function openSessionDetail(id) {
 // ============================================================
 function startRealtimeListener() {
   if (!currentUser) return;
+  if (sessionSyncUnsub) { sessionSyncUnsub(); sessionSyncUnsub = null; }
+  sessionSyncUnsub = db.collection('sessions').orderBy('updatedAt','desc').limit(1)
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added' || change.type === 'modified') {
+          loadDashboard();
+        }
+      });
+    });
   db.collection('laptimes').where('circuit','==','Clark International Speedway').orderBy('submittedAt','desc').limit(1)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
