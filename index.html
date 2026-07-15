@@ -2971,6 +2971,7 @@ async function loadLeaderboardTimes(circuit, category, limitCount = null) {
 async function loadDashboard() {
   try {
     const times = await loadLeaderboardTimes('Clark International Speedway', currentDashCategory, 10);
+    const myBestLap = await loadMyBestLap('Clark International Speedway', currentDashCategory);
 
     const stats = await loadStats();
     document.getElementById('stat-racers').textContent = stats.totalRacers;
@@ -2978,13 +2979,15 @@ async function loadDashboard() {
     document.getElementById('stat-sessions').textContent = stats.sessionsToday;
 
     if (times.length > 0) document.getElementById('stat-record').textContent = formatLapTime(times[0].lapSeconds);
-    if (currentUserData?.bestLap) document.getElementById('stat-mybest').textContent = formatLapTime(currentUserData.bestLap);
+    document.getElementById('stat-mybest').textContent = myBestLap ? formatLapTime(myBestLap.lapSeconds) : '—';
 
     // My rank — counts distinct riders ahead (bestLaps is one doc per rider), not raw submissions
-    if (currentUserData?.bestLap) {
+    if (myBestLap) {
       let rank = 1;
-      times.forEach(t => { if (t.lapSeconds < currentUserData.bestLap && t.userId !== currentUser.uid) rank++; });
+      times.forEach(t => { if (t.lapSeconds < myBestLap.lapSeconds && t.userId !== currentUser.uid) rank++; });
       document.getElementById('stat-myrank').textContent = '#'+rank;
+    } else {
+      document.getElementById('stat-myrank').textContent = '—';
     }
 
     renderLeaderboard('dashboard-lb', times, 10);
@@ -3003,6 +3006,33 @@ async function loadDashboard() {
   } catch(e) {
     document.getElementById('dashboard-lb').innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#icon-flag"/></svg></div><div class="empty-text">NO TIMES YET — BE THE FIRST!</div></div>';
   }
+}
+
+async function loadMyBestLap(circuit, category) {
+  if (!currentUser?.uid) return null;
+  const candidates = [];
+  try {
+    const bestSnap = await db.collection('bestLaps').where('userId','==',currentUser.uid).get();
+    bestSnap.forEach(doc => {
+      const data = { id:doc.id, ...doc.data() };
+      if (data.leaderboardVisible === false) return;
+      if (data.circuit !== circuit) return;
+      if ((data.vehicleType || data.vehicle || 'Motorcycle') !== category) return;
+      if (typeof data.lapSeconds === 'number' && data.lapSeconds > 0) candidates.push(data);
+    });
+  } catch(e) {}
+  try {
+    const lapSnap = await db.collection('laptimes').where('userId','==',currentUser.uid).get();
+    lapSnap.forEach(doc => {
+      const data = { id:doc.id, ...doc.data() };
+      if (data.leaderboardVisible === false) return;
+      if (data.circuit !== circuit) return;
+      if ((data.vehicleType || data.vehicle || 'Motorcycle') !== category) return;
+      if (typeof data.lapSeconds === 'number' && data.lapSeconds > 0) candidates.push(data);
+    });
+  } catch(e) {}
+  candidates.sort((a,b) => a.lapSeconds - b.lapSeconds);
+  return candidates[0] || null;
 }
 
 async function loadRecentSyncedSessions(limitCount = 5) {
