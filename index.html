@@ -1972,14 +1972,14 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <div class="page-hero">
         <div class="page-kicker">IMPORT CENTER</div>
         <div class="page-title">Upload & Import Sessions</div>
-        <p class="page-copy">Use the iOS app for verified uploads. This page prepares the website workflow for AKSYS exports, third-party lap timer database files, CSV, and GPX imports.</p>
+        <p class="page-copy">Use the iOS app for verified uploads, or review external logger sessions directly in the browser for Pro analysis.</p>
       </div>
       <div class="split-grid">
         <div class="info-card">
-          <div class="info-label">Supported Sources</div>
-          <div class="info-sub">Import AKSYS CSV/GPX exports or third-party SQLite lap timer DB files directly in the browser. Imported rows are tagged so official app laps and imported laps remain traceable.</div>
+          <div class="info-label">Pro Session Reviewer</div>
+          <div class="info-sub">Import AKSYS CSV/GPX exports or external logger SQLite DB files directly in the browser. The website rebuilds a review summary, route trace, sample rate, speed, and inferred braking/acceleration zones.</div>
           <div style="margin-top:14px;">
-            <input type="file" id="import-file" accept=".csv,.gpx,.db" onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
+            <input type="file" id="import-file" accept=".csv,.gpx,.db,.sqlite,.sqlite3" onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
           </div>
           <div class="form-inline" style="margin-top:12px;">
             <select id="import-circuit">
@@ -1999,12 +1999,13 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
             <span id="import-status" class="status-pill">NO FILE</span>
           </div>
           <div class="mini-table" id="import-preview" style="margin-top:14px;">
-            <div class="empty-state"><div class="empty-text">SELECT CSV, GPX, OR LAP TIMER DB</div></div>
+            <div class="empty-state"><div class="empty-text">SELECT CSV, GPX, OR LOGGER DB</div></div>
           </div>
+          <div id="import-analysis" style="margin-top:14px;"></div>
           <div class="info-grid" style="margin-top:14px;">
             <div class="info-card"><div class="info-label">AKSYS App</div><div class="status-pill good">LIVE</div><div class="info-sub">Verified app uploads to leaderboard.</div></div>
-            <div class="info-card"><div class="info-label">Lap Timer DB</div><div class="status-pill good">BROWSER PARSER</div><div class="info-sub">Reads lap tables from supported SQLite DB exports.</div></div>
-            <div class="info-card"><div class="info-label">CSV / GPX</div><div class="status-pill good">BROWSER PARSER</div><div class="info-sub">Reads lap rows or route summary from exported files.</div></div>
+            <div class="info-card"><div class="info-label">External Logger DB</div><div class="status-pill good">PRO REVIEW</div><div class="info-sub">Reads supported SQLite lap and GPS tables without separate desktop software.</div></div>
+            <div class="info-card"><div class="info-label">CSV / GPX</div><div class="status-pill good">BROWSER PARSER</div><div class="info-sub">Reads lap rows, GPX routes, and AKSYS track point exports.</div></div>
           </div>
         </div>
         <div class="info-card">
@@ -3329,6 +3330,7 @@ function renderLiveRiderCard(r) {
 // IMPORT CENTER
 // ============================================================
 let pendingImportedLaps = [];
+let pendingImportAnalysis = null;
 let sqlJsPromise = null;
 let currentOpenSession = null;
 
@@ -3340,16 +3342,20 @@ async function handleImportFile(event) {
   status.textContent = 'PARSING';
   try {
     const ext = file.name.split('.').pop().toLowerCase();
+    pendingImportAnalysis = null;
     if (ext === 'csv') pendingImportedLaps = parseImportedCsv(await file.text(), file.name);
     else if (ext === 'gpx') pendingImportedLaps = parseImportedGpx(await file.text(), file.name);
-    else if (ext === 'db') pendingImportedLaps = await parseExternalLoggerDb(await file.arrayBuffer(), file.name);
+    else if (['db','sqlite','sqlite3'].includes(ext)) pendingImportedLaps = await parseExternalLoggerDb(await file.arrayBuffer(), file.name);
     else throw new Error('Unsupported file type');
     renderImportPreview();
+    renderImportAnalysis();
     status.className = pendingImportedLaps.length ? 'status-pill good' : 'status-pill warn';
     status.textContent = pendingImportedLaps.length ? `${pendingImportedLaps.length} LAPS READY` : 'NO LAPS FOUND';
   } catch(e) {
     pendingImportedLaps = [];
+    pendingImportAnalysis = null;
     document.getElementById('import-preview').innerHTML = `<div class="empty-state"><div class="empty-text">${escapeHtml(e.message)}</div></div>`;
+    document.getElementById('import-analysis').innerHTML = '';
     status.className = 'status-pill warn';
     status.textContent = 'PARSE FAILED';
   }
@@ -3359,9 +3365,12 @@ function parseImportedCsv(text, fileName) {
   const lines = text.split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return [];
   const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
-  return lines.slice(1).map((line, idx) => {
+  const rows = lines.slice(1).map(line => {
     const cells = splitCsvLine(line);
-    const row = Object.fromEntries(headers.map((h,i) => [h, cells[i] || '']));
+    return Object.fromEntries(headers.map((h,i) => [h, cells[i] || '']));
+  });
+  const points = rows.map((row, idx) => csvRowToPoint(row, idx)).filter(Boolean);
+  const laps = rows.map((row, idx) => {
     const seconds = Number(row.lapseconds || row.lap_seconds || row.seconds || parseTimeToSeconds(row.laptime || row.lap_time || row.time || ''));
     if (!Number.isFinite(seconds) || seconds <= 0) return null;
     return {
@@ -3372,6 +3381,25 @@ function parseImportedCsv(text, fileName) {
       importFileName: fileName
     };
   }).filter(Boolean);
+  pendingImportAnalysis = buildImportAnalysis({ fileName, source: 'CSV / AKSYS export', laps, points });
+  return laps.length ? laps : inferLapsFromPoints(points, fileName, 'website_csv_route_import');
+}
+
+function csvRowToPoint(row, idx) {
+  const lat = Number(row.lat || row.latitude || row.gps_lat || row['latitude deg']);
+  const lon = Number(row.lon || row.lng || row.longitude || row.gps_lon || row['longitude deg']);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) < 0.0001 || Math.abs(lon) < 0.0001) return null;
+  const timestamp = parsePointTime(row.timestamp || row.time || row.datetime || row.date_time, idx);
+  return {
+    lat, lon,
+    timestamp,
+    speed: Number(row.speed || row.speed_kmh || row['speed km/h'] || row.speedkmh || 0) || 0,
+    heading: numberOrNull(row.heading || row.course),
+    altitude: numberOrNull(row.altitude || row.alt),
+    gForce: numberOrNull(row.gforce || row.g_force || row.g || row.maxg),
+    leanAngle: numberOrNull(row.leanangle || row.lean_angle || row.inclination),
+    lapNumber: Number(row.lap || row.lapnumber || row.lap_number || 0) || null
+  };
 }
 
 function splitCsvLine(line) {
@@ -3391,18 +3419,26 @@ function parseImportedGpx(text, fileName) {
   const doc = new DOMParser().parseFromString(text, 'application/xml');
   const pts = Array.from(doc.querySelectorAll('trkpt'));
   if (pts.length < 2) return [];
-  const firstTime = pts[0].querySelector('time')?.textContent;
-  const lastTime = pts[pts.length-1].querySelector('time')?.textContent;
-  const seconds = firstTime && lastTime ? (new Date(lastTime)-new Date(firstTime))/1000 : null;
-  if (!seconds || seconds <= 0) return [];
-  return [{
+  const points = pts.map((pt, idx) => ({
+    lat: Number(pt.getAttribute('lat')),
+    lon: Number(pt.getAttribute('lon')),
+    timestamp: parsePointTime(pt.querySelector('time')?.textContent, idx),
+    speed: 0,
+    altitude: numberOrNull(pt.querySelector('ele')?.textContent)
+  })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+  const firstTime = points[0]?.timestamp;
+  const lastTime = points[points.length-1]?.timestamp;
+  const seconds = firstTime && lastTime ? (lastTime-firstTime)/1000 : null;
+  const laps = seconds && seconds > 0 ? [{
     lapNumber: 1,
     lapSeconds: seconds,
     topSpeed: null,
     source: 'website_gpx_import',
     importFileName: fileName,
-    trackPointCount: pts.length
-  }];
+    trackPointCount: points.length
+  }] : [];
+  pendingImportAnalysis = buildImportAnalysis({ fileName, source: 'GPX route', laps, points });
+  return laps.length ? laps : inferLapsFromPoints(points, fileName, 'website_gpx_route_import');
 }
 
 async function parseExternalLoggerDb(buffer, fileName) {
@@ -3413,13 +3449,18 @@ async function parseExternalLoggerDb(buffer, fileName) {
   const database = new SQL.Database(new Uint8Array(buffer));
   const tables = database.exec("select name from sqlite_master where type='table'");
   const tableNames = tables[0]?.values?.map(v => v[0]) || [];
-  if (!tableNames.includes('lap')) throw new Error('No supported lap table found');
-  const result = database.exec('select * from lap where ifnull(bFailed,0)=0 order by id asc');
-  if (!result.length) return [];
-  const cols = result[0].columns;
-  const rows = result[0].values.map(values => Object.fromEntries(cols.map((c,i) => [c, values[i]])));
+  const points = tableNames.includes('WayPoints') ? readWaypointPoints(database) : [];
+  let rows = [];
+  if (tableNames.includes('lap')) {
+    const result = database.exec('select * from lap where ifnull(bFailed,0)=0 order by id asc');
+    if (result.length) {
+      const cols = result[0].columns;
+      rows = result[0].values.map(values => Object.fromEntries(cols.map((c,i) => [c, values[i]])));
+    }
+  }
+  const summary = tableNames.includes('SessList') ? readSessionSummary(database) : null;
   database.close();
-  return rows.map((r, idx) => ({
+  const laps = rows.map((r, idx) => ({
     lapNumber: Number(r.id || idx + 1),
     lapSeconds: Number(r.duration),
     topSpeed: Number(r.MaxSpd || 0) || null,
@@ -3433,6 +3474,214 @@ async function parseExternalLoggerDb(buffer, fileName) {
     source: 'external_db_import',
     importFileName: fileName
   })).filter(l => Number.isFinite(l.lapSeconds) && l.lapSeconds > 0);
+  const inferred = laps.length ? laps : inferLapsFromPoints(points, fileName, 'external_db_route_import');
+  pendingImportAnalysis = buildImportAnalysis({
+    fileName,
+    source: summary?.model ? `External logger ${summary.model}` : 'External logger DB',
+    laps: inferred,
+    points,
+    declaredHz: summary?.hz || null,
+    trackName: summary?.trackName || null,
+    sessionDate: summary?.date || null
+  });
+  if (!inferred.length && !points.length) throw new Error('No supported lap or WayPoints table found');
+  return inferred;
+}
+
+function readSessionSummary(database) {
+  try {
+    const result = database.exec('select sName, startDateTime, devModel, nHz from SessList limit 1');
+    if (!result.length) return null;
+    const cols = result[0].columns;
+    const row = Object.fromEntries(cols.map((c,i) => [c, result[0].values[0][i]]));
+    return {
+      trackName: row.sName || null,
+      date: row.startDateTime || null,
+      model: row.devModel || 'LT-8000GT',
+      hz: Number(row.nHz || 0) || null
+    };
+  } catch(e) { return null; }
+}
+
+function readWaypointPoints(database) {
+  try {
+    const result = database.exec('select id, rcr, time, ms, lat, lon, altitude, heading, speed, Gx, Gy, Gz, distance, Inclination from WayPoints order by id');
+    if (!result.length) return [];
+    const cols = result[0].columns;
+    return result[0].values.map((values, idx) => {
+      const r = Object.fromEntries(cols.map((c,i) => [c, values[i]]));
+      const gx = Number(r.Gx || 0), gy = Number(r.Gy || 0), gz = Number(r.Gz || 0);
+      const epoch = Number(r.time || 0) + Number(r.ms || 0) / 1000;
+      return {
+        id: Number(r.id || idx + 1),
+        lat: Number(r.lat),
+        lon: Number(r.lon),
+        timestamp: epoch > 0 ? new Date(epoch * 1000) : new Date(Date.now() + idx * 40),
+        speed: Number(r.speed || 0) || 0,
+        heading: numberOrNull(r.heading),
+        altitude: numberOrNull(r.altitude),
+        gForce: Math.sqrt(gx * gx + gy * gy + gz * gz),
+        gForceX: gx,
+        gForceY: gy,
+        gForceZ: gz,
+        distanceKm: numberOrNull(r.distance),
+        leanAngle: Math.abs(Number(r.Inclination || 0)),
+        recordType: r.rcr || ''
+      };
+    }).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon) && Math.abs(p.lat) > 0.0001 && Math.abs(p.lon) > 0.0001);
+  } catch(e) {
+    return [];
+  }
+}
+
+function buildImportAnalysis({ fileName, source, laps = [], points = [], declaredHz = null, trackName = null, sessionDate = null }) {
+  const detectedHz = detectSampleRate(points);
+  const enriched = enrichPointSpeeds(points);
+  const bestLap = laps.length ? Math.min(...laps.map(l => l.lapSeconds).filter(Number.isFinite)) : null;
+  const topSpeed = Math.max(0, ...enriched.map(p => Number(p.speed || 0)).filter(Number.isFinite));
+  const brakingZones = detectSpeedZones(enriched, 'brake');
+  const accelZones = detectSpeedZones(enriched, 'accel');
+  const confidenceScore = calculateImportConfidence({ points: enriched, laps, detectedHz, declaredHz });
+  return {
+    fileName,
+    source,
+    laps,
+    points: enriched,
+    pointCount: enriched.length,
+    declaredHz,
+    detectedHz,
+    trackName,
+    sessionDate,
+    bestLap: Number.isFinite(bestLap) ? bestLap : null,
+    topSpeed,
+    brakingZones,
+    accelZones,
+    confidenceScore,
+    confidenceLabel: confidenceScore >= 85 ? 'HIGH CONFIDENCE' : confidenceScore >= 65 ? 'REVIEW OK' : 'LOW DATA'
+  };
+}
+
+function inferLapsFromPoints(points, fileName, source) {
+  if (!points || points.length < 2) return [];
+  const first = points[0].timestamp;
+  const last = points[points.length - 1].timestamp;
+  const seconds = first && last ? (last - first) / 1000 : null;
+  if (!seconds || seconds <= 0) return [];
+  return [{
+    lapNumber: 1,
+    lapSeconds: seconds,
+    topSpeed: Math.max(0, ...points.map(p => Number(p.speed || 0)).filter(Number.isFinite)) || null,
+    source,
+    importFileName: fileName,
+    trackPointCount: points.length
+  }];
+}
+
+function detectSampleRate(points) {
+  if (!points || points.length < 4) return null;
+  const intervals = [];
+  for (let i = 1; i < points.length; i++) {
+    const dt = (points[i].timestamp - points[i - 1].timestamp) / 1000;
+    if (dt > 0.001 && dt < 5) intervals.push(dt);
+  }
+  if (!intervals.length) return null;
+  intervals.sort((a,b) => a-b);
+  const median = intervals[Math.floor(intervals.length / 2)];
+  return median > 0 ? 1 / median : null;
+}
+
+function enrichPointSpeeds(points) {
+  if (!points || points.length < 2) return points || [];
+  return points.map((point, index) => {
+    if (Number(point.speed || 0) > 0 || index === 0) return point;
+    const previous = points[index - 1];
+    const dt = (point.timestamp - previous.timestamp) / 1000;
+    if (dt <= 0) return point;
+    return { ...point, speed: haversineMeters(previous, point) / dt * 3.6 };
+  });
+}
+
+function detectSpeedZones(points, mode) {
+  if (!points || points.length < 4) return [];
+  const zones = [];
+  let start = null;
+  let peakG = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1], cur = points[i];
+    const dt = (cur.timestamp - prev.timestamp) / 1000;
+    if (dt <= 0.02 || dt > 2) continue;
+    const accelG = ((Number(cur.speed || 0) - Number(prev.speed || 0)) / 3.6) / dt / 9.80665;
+    const active = mode === 'brake' ? accelG <= -0.18 : accelG >= 0.14;
+    if (active && start === null) {
+      start = i - 1;
+      peakG = Math.abs(accelG);
+    } else if (active) {
+      peakG = Math.max(peakG, Math.abs(accelG));
+    } else if (start !== null) {
+      const zone = makeSpeedZone(points, start, i - 1, peakG);
+      if (zone && zone.duration >= 0.20 && zone.distance >= 3) zones.push(zone);
+      start = null;
+      peakG = 0;
+    }
+  }
+  if (start !== null) {
+    const zone = makeSpeedZone(points, start, points.length - 1, peakG);
+    if (zone && zone.duration >= 0.20 && zone.distance >= 3) zones.push(zone);
+  }
+  return zones;
+}
+
+function makeSpeedZone(points, start, end, peakG) {
+  if (end <= start) return null;
+  let distance = 0;
+  for (let i = start + 1; i <= end; i++) distance += haversineMeters(points[i - 1], points[i]);
+  return {
+    startIndex: start,
+    endIndex: end,
+    startSpeed: Number(points[start].speed || 0),
+    endSpeed: Number(points[end].speed || 0),
+    duration: (points[end].timestamp - points[start].timestamp) / 1000,
+    distance,
+    peakG
+  };
+}
+
+function calculateImportConfidence({ points, laps, detectedHz, declaredHz }) {
+  let score = 50;
+  if (laps?.length) score += 15;
+  if (points?.length >= 100) score += 15;
+  if (points?.length >= 1000) score += 10;
+  const hz = detectedHz || declaredHz || 0;
+  if (hz >= 20) score += 15;
+  else if (hz >= 10) score += 10;
+  else if (hz >= 1) score += 5;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function parsePointTime(value, index = 0) {
+  if (value instanceof Date) return value;
+  if (value === undefined || value === null || value === '') return new Date(Date.now() + index * 1000);
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 1000000000) {
+    return new Date(numeric > 100000000000 ? numeric : numeric * 1000);
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date(Date.now() + index * 1000) : parsed;
+}
+
+function numberOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function haversineMeters(a, b) {
+  const R = 6371000;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLon = (b.lon - a.lon) * Math.PI / 180;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const x = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
 function renderImportPreview() {
@@ -3448,6 +3697,77 @@ function renderImportPreview() {
       <div class="lap-time ${l.lapSeconds===best?'orange':''}">${formatLapTime(l.lapSeconds)}</div>
       <div>${l.topSpeed ? Math.round(l.topSpeed)+' km/h' : '—'}</div>
     </div>`).join('') + (pendingImportedLaps.length > 12 ? `<div class="mini-row"><div>+ ${pendingImportedLaps.length - 12} more laps</div><div></div><div></div></div>` : '');
+}
+
+function renderImportAnalysis() {
+  const el = document.getElementById('import-analysis');
+  if (!el || !pendingImportAnalysis) { if (el) el.innerHTML = ''; return; }
+  const a = pendingImportAnalysis;
+  const confidenceClass = a.confidenceScore >= 85 ? 'good' : (a.confidenceScore >= 65 ? 'warn' : '');
+  el.innerHTML = `
+    <div class="info-card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div class="info-label">PRO REVIEW ANALYSIS</div>
+          <div class="info-value">${escapeHtml(a.trackName || 'Imported Session')}</div>
+          <div class="info-sub">${escapeHtml(a.source)} · ${escapeHtml(a.fileName)}</div>
+        </div>
+        <span class="status-pill ${confidenceClass}">${a.confidenceLabel}</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Best Lap</div><div class="info-value">${formatLapTime(a.bestLap)}</div></div>
+        <div class="info-card"><div class="info-label">Detected Hz</div><div class="info-value">${a.detectedHz ? a.detectedHz.toFixed(1) : '—'}</div><div class="info-sub">${a.declaredHz ? `Declared ${a.declaredHz} Hz` : 'Estimated from points'}</div></div>
+        <div class="info-card"><div class="info-label">GPS Points</div><div class="info-value">${a.pointCount || '—'}</div></div>
+        <div class="info-card"><div class="info-label">Top Speed</div><div class="info-value">${a.topSpeed ? Math.round(a.topSpeed)+' km/h' : '—'}</div></div>
+        <div class="info-card"><div class="info-label">Braking Zones</div><div class="info-value">${a.brakingZones.length}</div></div>
+        <div class="info-card"><div class="info-label">Accel Zones</div><div class="info-value">${a.accelZones.length}</div></div>
+      </div>
+      <div style="margin-top:14px;background:#05070a;border-radius:18px;border:1px solid var(--border);padding:12px;">
+        ${renderRouteSvg(a.points)}
+      </div>
+      <div class="mini-table" style="margin-top:14px;">
+        ${renderZoneRows(a.brakingZones, 'BRAKING', 'red')}
+        ${renderZoneRows(a.accelZones, 'ACCEL', 'green')}
+      </div>
+      <div class="info-sub" style="margin-top:12px;">Browser review is for Pro analysis and imported/non-official leaderboard entries. Official timing still comes from AKSYS app-recorded sessions.</div>
+    </div>`;
+}
+
+function renderZoneRows(zones, label, colorName) {
+  if (!zones.length) return `<div class="mini-row"><div>${label}</div><div>—</div><div>No zones found</div></div>`;
+  return zones.slice(0, 5).map((z, idx) => `
+    <div class="mini-row">
+      <div><strong>${label} ${idx + 1}</strong><div class="driver-meta">${z.duration.toFixed(2)}s · ${z.distance.toFixed(0)}m</div></div>
+      <div class="lap-time ${colorName === 'red' ? '' : 'orange'}">${Math.round(z.startSpeed)}→${Math.round(z.endSpeed)}</div>
+      <div>${z.peakG ? z.peakG.toFixed(2)+'G' : '—'}</div>
+    </div>`).join('');
+}
+
+function renderRouteSvg(points) {
+  if (!points || points.length < 2) {
+    return '<div class="empty-state"><div class="empty-text">NO GPS ROUTE POINTS IN THIS FILE</div></div>';
+  }
+  const sampled = points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 900)) === 0);
+  const lats = sampled.map(p => p.lat), lons = sampled.map(p => p.lon);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  const pad = 22, width = 720, height = 300;
+  const xScale = (width - pad * 2) / Math.max(0.000001, maxLon - minLon);
+  const yScale = (height - pad * 2) / Math.max(0.000001, maxLat - minLat);
+  const scale = Math.min(xScale, yScale);
+  const xOffset = (width - (maxLon - minLon) * scale) / 2;
+  const yOffset = (height - (maxLat - minLat) * scale) / 2;
+  const pointToSvg = p => `${((p.lon - minLon) * scale + xOffset).toFixed(1)},${(height - ((p.lat - minLat) * scale + yOffset)).toFixed(1)}`;
+  const path = sampled.map((p, i) => `${i ? 'L' : 'M'}${pointToSvg(p)}`).join(' ');
+  const start = pointToSvg(sampled[0]);
+  const end = pointToSvg(sampled[sampled.length - 1]);
+  return `<svg viewBox="0 0 ${width} ${height}" style="display:block;width:100%;height:auto;">
+    <rect width="${width}" height="${height}" rx="16" fill="#05070a"/>
+    <path d="${path}" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${path}" fill="none" stroke="#ff1730" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${start.split(',')[0]}" cy="${start.split(',')[1]}" r="5" fill="#2edb63"/>
+    <circle cx="${end.split(',')[0]}" cy="${end.split(',')[1]}" r="5" fill="#ff1730"/>
+    <text x="18" y="28" fill="#ffffff" opacity="0.55" font-size="12" font-family="Inter, sans-serif" letter-spacing="2">GPS RACING LINE</text>
+  </svg>`;
 }
 
 async function uploadImportedLaps() {
@@ -3482,7 +3802,9 @@ async function uploadImportedLaps() {
     status.className = 'status-pill good';
     status.textContent = 'UPLOADED';
     pendingImportedLaps = [];
+    pendingImportAnalysis = null;
     document.getElementById('import-preview').innerHTML = '<div class="empty-state"><div class="empty-text">IMPORT UPLOADED</div></div>';
+    document.getElementById('import-analysis').innerHTML = '';
     loadDashboard();
   } catch(e) {
     status.className = 'status-pill warn';
