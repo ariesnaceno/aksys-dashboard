@@ -3331,8 +3331,12 @@ function renderLiveRiderCard(r) {
       <div><div class="info-label">Lean</div><div class="info-value">${numberOrDash(r.leanAngle)}°</div></div>
       <div><div class="info-label">Heart Rate</div><div class="info-value">${r.heartRate||'—'} bpm</div></div>
       <div><div class="info-label">GPS</div><div class="info-value">${r.gpsAccuracy ? '±'+Math.round(r.gpsAccuracy)+'m' : '—'}</div></div>
+      <div><div class="info-label">GPS Source</div><div class="info-value" style="font-size:16px;">${escapeHtml(r.externalGPSConnected ? (r.source || 'External GPS') : (r.source || 'Apple GPS'))}</div></div>
+      <div><div class="info-label">Hz Rate</div><div class="info-value">${r.gpsSampleRateHz ? Number(r.gpsSampleRateHz).toFixed(1) : '—'}</div></div>
+      <div><div class="info-label">Satellites</div><div class="info-value">${r.gpsSatelliteCount || '—'}</div></div>
+      <div><div class="info-label">Dropped</div><div class="info-value" style="color:${Number(r.gpsDroppedPackets||0)>0?'var(--yellow)':'var(--green)'}">${Number(r.gpsDroppedPackets||0)}</div></div>
     </div>
-    <div class="info-sub">Last update: ${updated ? updated.toLocaleTimeString('en-PH') : '—'} · Connection: Watch/iPhone → Firestore → Website</div>
+    <div class="info-sub">Last update: ${updated ? updated.toLocaleTimeString('en-PH') : '—'} · External GPS: ${r.externalGPSConnected ? 'CONNECTED' : 'NOT CONNECTED'} · Accuracy: ${r.gpsAccuracy ? '±'+Math.round(r.gpsAccuracy)+'m' : '—'}</div>
   </div>`;
 }
 
