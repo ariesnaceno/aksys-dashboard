@@ -1977,9 +1977,9 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <div class="split-grid">
         <div class="info-card">
           <div class="info-label">Pro Session Reviewer</div>
-          <div class="info-sub">Import AKSYS CSV/GPX exports or external logger SQLite DB files directly in the browser. The website rebuilds a review summary, route trace, sample rate, speed, and inferred braking/acceleration zones.</div>
+          <div class="info-sub">Import AKSYS CSV/GPX exports or a complete Qstarz workspace. For Qstarz sessions, select sessionList.db, sana_1.db, and sess_1.db together so laps and 25 Hz waypoints are merged correctly.</div>
           <div style="margin-top:14px;">
-            <input type="file" id="import-file" accept=".csv,.gpx,.db,.sqlite,.sqlite3" onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
+            <input type="file" id="import-file" accept=".csv,.gpx,.db,.sqlite,.sqlite3" multiple onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
           </div>
           <div class="form-inline" style="margin-top:12px;">
             <select id="import-circuit">
@@ -2537,6 +2537,7 @@ const db   = firebase.firestore();
 let currentUser = null, currentUserData = null;
 let trackEventsUnsub = null;
 let sessionSyncUnsub = null;
+let lapSyncUnsub = null;
 const ADMIN_EMAILS = ['ariesnaceno@yahoo.com'];
 
 function isCurrentUserAdmin() {
@@ -2691,6 +2692,7 @@ auth.onAuthStateChanged(async user => {
     currentUser = null; currentUserData = null;
     if (trackEventsUnsub) { trackEventsUnsub(); trackEventsUnsub = null; }
     if (sessionSyncUnsub) { sessionSyncUnsub(); sessionSyncUnsub = null; }
+    if (lapSyncUnsub) { lapSyncUnsub(); lapSyncUnsub = null; }
     updateAdminVisibility();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
@@ -3335,15 +3337,21 @@ let sqlJsPromise = null;
 let currentOpenSession = null;
 
 async function handleImportFile(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
   const status = document.getElementById('import-status');
   status.className = 'status-pill warn';
   status.textContent = 'PARSING';
   try {
+    const file = files[0];
     const ext = file.name.split('.').pop().toLowerCase();
+    const extensions = files.map(f => f.name.split('.').pop().toLowerCase());
     pendingImportAnalysis = null;
-    if (ext === 'csv') pendingImportedLaps = parseImportedCsv(await file.text(), file.name);
+    if (files.length > 1 && extensions.every(e => ['db','sqlite','sqlite3'].includes(e))) {
+      pendingImportedLaps = await parseExternalLoggerDbFiles(files);
+    } else if (files.length > 1) {
+      throw new Error('Select one CSV/GPX file, or select only Qstarz DB files together.');
+    } else if (ext === 'csv') pendingImportedLaps = parseImportedCsv(await file.text(), file.name);
     else if (ext === 'gpx') pendingImportedLaps = parseImportedGpx(await file.text(), file.name);
     else if (['db','sqlite','sqlite3'].includes(ext)) pendingImportedLaps = await parseExternalLoggerDb(await file.arrayBuffer(), file.name);
     else throw new Error('Unsupported file type');
@@ -3359,6 +3367,14 @@ async function handleImportFile(event) {
     status.className = 'status-pill warn';
     status.textContent = 'PARSE FAILED';
   }
+}
+
+async function parseExternalLoggerDbFiles(files) {
+  const parsedFiles = [];
+  for (const file of files) {
+    parsedFiles.push(await readExternalLoggerDb(await file.arrayBuffer(), file.name));
+  }
+  return buildExternalLoggerImport(parsedFiles);
 }
 
 function parseImportedCsv(text, fileName) {
@@ -3442,6 +3458,11 @@ function parseImportedGpx(text, fileName) {
 }
 
 async function parseExternalLoggerDb(buffer, fileName) {
+  const parsed = await readExternalLoggerDb(buffer, fileName);
+  return buildExternalLoggerImport([parsed]);
+}
+
+async function readExternalLoggerDb(buffer, fileName) {
   if (!sqlJsPromise) {
     sqlJsPromise = initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}` });
   }
@@ -3471,13 +3492,36 @@ async function parseExternalLoggerDb(buffer, fileName) {
     startLon: Number(r.start_inter_lon || 0) || null,
     finishLat: Number(r.finish_inter_lat || 0) || null,
     finishLon: Number(r.finish_inter_lon || 0) || null,
+    startWaypointId: Number(r.start_wp || 0) || null,
+    finishWaypointId: Number(r.finish_wp || 0) || null,
     source: 'external_db_import',
     importFileName: fileName
   })).filter(l => Number.isFinite(l.lapSeconds) && l.lapSeconds > 0);
-  const inferred = laps.length ? laps : inferLapsFromPoints(points, fileName, 'external_db_route_import');
+  return { fileName, tableNames, summary, laps, points };
+}
+
+function buildExternalLoggerImport(parsedFiles) {
+  const fileNames = parsedFiles.map(f => f.fileName).join(' + ');
+  const summary = parsedFiles.find(f => f.summary)?.summary || null;
+  const points = parsedFiles.flatMap(f => f.points || []).sort((a, b) => (a.id || 0) - (b.id || 0));
+  const lapFileNames = parsedFiles.filter(f => f.laps?.length).map(f => f.fileName).join(' + ') || fileNames;
+  const rawLaps = parsedFiles.flatMap(f => f.laps || []);
+  const laps = rawLaps.map((lap, idx) => {
+    const lapPoints = pointsForWaypointRange(points, lap.startWaypointId, lap.finishWaypointId);
+    return {
+      ...lap,
+      lapNumber: lap.lapNumber || idx + 1,
+      importFileName: lapFileNames,
+      trackPointCount: lapPoints.length || lap.trackPointCount || null,
+      startTimestamp: lapPoints[0]?.timestamp || null,
+      finishTimestamp: lapPoints[lapPoints.length - 1]?.timestamp || null
+    };
+  });
+  const inferred = laps.length ? laps : inferLapsFromPoints(points, fileNames, 'external_db_route_import');
+  const hasFullQstarzBundle = parsedFiles.some(f => f.summary) && rawLaps.length && points.length;
   pendingImportAnalysis = buildImportAnalysis({
-    fileName,
-    source: summary?.model ? `External logger ${summary.model}` : 'External logger DB',
+    fileName: fileNames,
+    source: hasFullQstarzBundle ? `Qstarz workspace ${summary?.model || 'logger'}` : (summary?.model ? `External logger ${summary.model}` : 'External logger DB'),
     laps: inferred,
     points,
     declaredHz: summary?.hz || null,
@@ -3485,7 +3529,17 @@ async function parseExternalLoggerDb(buffer, fileName) {
     sessionDate: summary?.date || null
   });
   if (!inferred.length && !points.length) throw new Error('No supported lap or WayPoints table found');
+  if (parsedFiles.length > 1 && (!rawLaps.length || !points.length)) {
+    throw new Error('Qstarz bundle incomplete. Select sessionList.db, sana_1.db, and sess_1.db together.');
+  }
   return inferred;
+}
+
+function pointsForWaypointRange(points, startId, finishId) {
+  if (!points?.length || !startId || !finishId) return [];
+  const minId = Math.min(startId, finishId);
+  const maxId = Math.max(startId, finishId);
+  return points.filter(p => p.id >= minId && p.id <= maxId);
 }
 
 function readSessionSummary(database) {
@@ -4058,6 +4112,7 @@ async function openSyncedSessionDetail(collectionName, id) {
 function startRealtimeListener() {
   if (!currentUser) return;
   if (sessionSyncUnsub) { sessionSyncUnsub(); sessionSyncUnsub = null; }
+  if (lapSyncUnsub) { lapSyncUnsub(); lapSyncUnsub = null; }
   sessionSyncUnsub = db.collection('sessions').orderBy('updatedAt','desc').limit(1)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
@@ -4066,11 +4121,12 @@ function startRealtimeListener() {
         }
       });
     });
-  db.collection('laptimes').where('circuit','==','Clark International Speedway').orderBy('submittedAt','desc').limit(1)
+  lapSyncUnsub = db.collection('laptimes').orderBy('submittedAt','desc').limit(12)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
         if (change.type==='added') {
           const d = change.doc.data();
+          if (d.circuit !== 'Clark International Speedway') return;
           if (d.userId!==currentUser.uid && currentUserData?.bestLap && d.lapSeconds < currentUserData.bestLap) {
             showToast(`${d.displayName||'Someone'} just beat your best at CIS! ${formatLapTime(d.lapSeconds)}`);
           }
