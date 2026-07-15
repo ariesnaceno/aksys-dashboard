@@ -1993,6 +1993,14 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
             </select>
             <select id="import-vehicle-type"><option>Motorcycle</option><option>Car</option></select>
             <input id="import-vehicle" placeholder="Vehicle model">
+            <select id="import-external-source">
+              <option value="auto">Auto-detect external GPS</option>
+              <option value="Qstarz LT-8000GT">Qstarz LT-8000GT</option>
+              <option value="RaceBox Mini S">RaceBox Mini S</option>
+              <option value="Dual XGPS160">Dual XGPS160</option>
+              <option value="External GPS">Other External GPS</option>
+              <option value="AKSYS App Export">AKSYS App Export</option>
+            </select>
           </div>
           <div class="action-row" style="margin-top:10px;">
             <button class="ghost-btn" onclick="uploadImportedLaps()">UPLOAD IMPORTED LAPS</button>
@@ -3389,10 +3397,13 @@ function parseImportedCsv(text, fileName) {
   const laps = rows.map((row, idx) => {
     const seconds = Number(row.lapseconds || row.lap_seconds || row.seconds || parseTimeToSeconds(row.laptime || row.lap_time || row.time || ''));
     if (!Number.isFinite(seconds) || seconds <= 0) return null;
+    const externalGpsSource = detectExternalGpsSource(fileName, row.source || row.device || row.logger || row.gps_source);
     return {
       lapNumber: Number(row.lap || row.lapnumber || idx + 1),
       lapSeconds: seconds,
       topSpeed: Number(row.topspeed || row.top_speed || row.maxspeed || row.max_spd || 0) || null,
+      externalGpsSource,
+      timingSourceLabel: sourceDisplayName(externalGpsSource),
       source: 'website_csv_import',
       importFileName: fileName
     };
@@ -3449,6 +3460,8 @@ function parseImportedGpx(text, fileName) {
     lapNumber: 1,
     lapSeconds: seconds,
     topSpeed: null,
+    externalGpsSource: detectExternalGpsSource(fileName, 'gpx'),
+    timingSourceLabel: sourceDisplayName(detectExternalGpsSource(fileName, 'gpx')),
     source: 'website_gpx_import',
     importFileName: fileName,
     trackPointCount: points.length
@@ -3494,6 +3507,8 @@ async function readExternalLoggerDb(buffer, fileName) {
     finishLon: Number(r.finish_inter_lon || 0) || null,
     startWaypointId: Number(r.start_wp || 0) || null,
     finishWaypointId: Number(r.finish_wp || 0) || null,
+    externalGpsSource: detectExternalGpsSource(fileName, summary?.model),
+    timingSourceLabel: sourceDisplayName(detectExternalGpsSource(fileName, summary?.model)),
     source: 'external_db_import',
     importFileName: fileName
   })).filter(l => Number.isFinite(l.lapSeconds) && l.lapSeconds > 0);
@@ -3519,10 +3534,16 @@ function buildExternalLoggerImport(parsedFiles) {
   });
   const inferred = laps.length ? laps : inferLapsFromPoints(points, fileNames, 'external_db_route_import');
   const hasFullQstarzBundle = parsedFiles.some(f => f.summary) && rawLaps.length && points.length;
+  const externalGpsSource = detectExternalGpsSource(fileNames, summary?.model || pendingImportAnalysis?.source);
+  const normalizedLaps = inferred.map(lap => ({
+    ...lap,
+    externalGpsSource: lap.externalGpsSource || externalGpsSource,
+    timingSourceLabel: lap.timingSourceLabel || sourceDisplayName(lap.externalGpsSource || externalGpsSource)
+  }));
   pendingImportAnalysis = buildImportAnalysis({
     fileName: fileNames,
     source: hasFullQstarzBundle ? `Qstarz workspace ${summary?.model || 'logger'}` : (summary?.model ? `External logger ${summary.model}` : 'External logger DB'),
-    laps: inferred,
+    laps: normalizedLaps,
     points,
     declaredHz: summary?.hz || null,
     trackName: summary?.trackName || null,
@@ -3532,7 +3553,7 @@ function buildExternalLoggerImport(parsedFiles) {
   if (parsedFiles.length > 1 && (!rawLaps.length || !points.length)) {
     throw new Error('Qstarz bundle incomplete. Select sessionList.db, sana_1.db, and sess_1.db together.');
   }
-  return inferred;
+  return normalizedLaps;
 }
 
 function pointsForWaypointRange(points, startId, finishId) {
@@ -3621,10 +3642,13 @@ function inferLapsFromPoints(points, fileName, source) {
   const last = points[points.length - 1].timestamp;
   const seconds = first && last ? (last - first) / 1000 : null;
   if (!seconds || seconds <= 0) return [];
+  const externalGpsSource = detectExternalGpsSource(fileName, source);
   return [{
     lapNumber: 1,
     lapSeconds: seconds,
     topSpeed: Math.max(0, ...points.map(p => Number(p.speed || 0)).filter(Number.isFinite)) || null,
+    externalGpsSource,
+    timingSourceLabel: sourceDisplayName(externalGpsSource),
     source,
     importFileName: fileName,
     trackPointCount: points.length
@@ -3747,7 +3771,7 @@ function renderImportPreview() {
   const best = pendingImportedLaps.reduce((m,l)=> Math.min(m,l.lapSeconds), Infinity);
   el.innerHTML = pendingImportedLaps.slice(0,12).map(l => `
     <div class="mini-row">
-      <div><strong>Lap ${l.lapNumber || '—'}</strong><div class="driver-meta">${escapeHtml(l.source)} · ${escapeHtml(l.importFileName||'')}</div></div>
+      <div><strong>Lap ${l.lapNumber || '—'}</strong><div class="driver-meta">${escapeHtml(sourceDisplayName(l.externalGpsSource || l.timingSourceLabel))} · ${escapeHtml(l.importFileName||'')}</div></div>
       <div class="lap-time ${l.lapSeconds===best?'orange':''}">${formatLapTime(l.lapSeconds)}</div>
       <div>${l.topSpeed ? Math.round(l.topSpeed)+' km/h' : '—'}</div>
     </div>`).join('') + (pendingImportedLaps.length > 12 ? `<div class="mini-row"><div>+ ${pendingImportedLaps.length - 12} more laps</div><div></div><div></div></div>` : '');
@@ -3830,6 +3854,7 @@ async function uploadImportedLaps() {
   const vehicleType = document.getElementById('import-vehicle-type').value;
   const vehicle = document.getElementById('import-vehicle').value.trim() || currentUserData?.vehicle || vehicleType;
   const displayName = currentUserData?.displayName || currentUser.email;
+  const forcedSource = selectedExternalGpsSource();
   const status = document.getElementById('import-status');
   status.className = 'status-pill warn';
   status.textContent = 'UPLOADING';
@@ -3838,6 +3863,7 @@ async function uploadImportedLaps() {
     const now = firebase.firestore.FieldValue.serverTimestamp();
     pendingImportedLaps.forEach(lap => {
       const ref = db.collection('laptimes').doc();
+      const externalGpsSource = forcedSource || lap.externalGpsSource || detectExternalGpsSource(lap.importFileName, lap.source);
       batch.set(ref, {
         ...lap,
         userId: currentUser.uid,
@@ -3846,13 +3872,16 @@ async function uploadImportedLaps() {
         vehicleType,
         vehicle,
         submittedAt: now,
+        externalGpsSource,
+        timingSourceLabel: sourceDisplayName(externalGpsSource),
+        gpsSource: externalGpsSource,
         source: lap.source || 'website_import',
         verificationStatus: 'imported',
         isOfficial: false
       });
     });
     await batch.commit();
-    await upsertImportedBestLap(pendingImportedLaps, { circuit, vehicleType, vehicle, displayName });
+    await upsertImportedBestLap(pendingImportedLaps, { circuit, vehicleType, vehicle, displayName, forcedSource });
     status.className = 'status-pill good';
     status.textContent = 'UPLOADED';
     pendingImportedLaps = [];
@@ -3868,7 +3897,8 @@ async function uploadImportedLaps() {
 
 async function upsertImportedBestLap(laps, meta) {
   const best = laps.reduce((a,b)=> a.lapSeconds <= b.lapSeconds ? a : b);
-  const docId = `${currentUser.uid}_${slugify(meta.circuit)}_${slugify(meta.vehicleType)}`;
+  const externalGpsSource = meta.forcedSource || best.externalGpsSource || detectExternalGpsSource(best.importFileName, best.source);
+  const docId = `${currentUser.uid}_${slugify(meta.circuit)}_${slugify(meta.vehicleType)}_${slugify(externalGpsSource || 'import')}`;
   const ref = db.collection('bestLaps').doc(docId);
   const existing = await ref.get();
   if (existing.exists && existing.data().lapSeconds <= best.lapSeconds) return;
@@ -3880,6 +3910,9 @@ async function upsertImportedBestLap(laps, meta) {
     vehicle: meta.vehicle,
     lapSeconds: best.lapSeconds,
     topSpeed: best.topSpeed || null,
+    externalGpsSource,
+    timingSourceLabel: sourceDisplayName(externalGpsSource),
+    gpsSource: externalGpsSource,
     source: best.source || 'website_import',
     verificationStatus: 'imported',
     isOfficial: false,
@@ -4096,7 +4129,7 @@ async function openSyncedSessionDetail(collectionName, id) {
       <div class="info-card"><div class="info-label">Vehicle</div><div class="info-value">${escapeHtml(s.vehicle||s.vehicleType||'—')}</div></div>
       <div class="info-card"><div class="info-label">Top Speed</div><div class="info-value">${s.topSpeed ? s.topSpeed+' km/h' : '—'}</div></div>
       <div class="info-card"><div class="info-label">Accuracy</div><div class="info-value">${s.averageGpsAccuracy ? '±'+Math.round(s.averageGpsAccuracy)+'m' : (s.gpsAccuracy ? '±'+Math.round(s.gpsAccuracy)+'m' : '—')}</div><div class="info-sub">Synced from app session GPS quality.</div></div>
-      <div class="info-card"><div class="info-label">Timing Source</div><div class="info-value">${escapeHtml(s.gpsSource||s.timingMode||s.source||'App')}</div><div class="info-sub">Virtual finish-line crossing where supported.</div></div>
+      <div class="info-card"><div class="info-label">Timing Source</div><div class="info-value">${escapeHtml(sourceDisplayName(s.externalGpsSource || s.gpsSource || s.timingSourceLabel || s.timingMode || s.source || 'App'))}</div><div class="info-sub">Virtual finish-line crossing where supported.</div></div>
       <div class="info-card"><div class="info-label">Test Mode</div><div class="info-value">${s.isTestMode ? 'YES' : 'NO'}</div></div>
       <div class="info-card"><div class="info-label">Laps</div><div class="info-value">${s.lapCount || s.totalLaps || '—'}</div></div>
       <div class="info-card"><div class="info-label">Leaderboard Status</div><div class="info-value">${s.isOfficial === false || s.verificationStatus === 'imported' ? 'IMPORTED' : 'APP VERIFIED'}</div><div class="info-sub">${s.isOfficial === false || s.verificationStatus === 'imported' ? 'Shown separately from official app-recorded laps.' : 'Recorded by AKSYS LapTimer app session flow.'}</div></div>`;
@@ -4174,10 +4207,37 @@ function numberOrDash(value) {
 function slugify(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
+function selectedExternalGpsSource() {
+  const value = document.getElementById('import-external-source')?.value || 'auto';
+  return value === 'auto' ? null : value;
+}
+function detectExternalGpsSource(...values) {
+  const haystack = values.filter(Boolean).join(' ').toLowerCase();
+  if (haystack.includes('qstarz') || haystack.includes('lt-8000') || haystack.includes('8000gt') || haystack.includes('sana_') || haystack.includes('sess_')) return 'Qstarz LT-8000GT';
+  if (haystack.includes('racebox') || haystack.includes('mini s') || haystack.includes('minis')) return 'RaceBox Mini S';
+  if (haystack.includes('xgps') || haystack.includes('dual')) return 'Dual XGPS160';
+  if (haystack.includes('gpx')) return 'GPX External GPS';
+  if (haystack.includes('csv')) return 'CSV External GPS';
+  if (haystack.includes('app')) return 'AKSYS App Export';
+  return 'External GPS';
+}
+function sourceDisplayName(value) {
+  const source = String(value || '').trim();
+  const normalized = source.toLowerCase();
+  if (!source) return 'EXTERNAL GPS';
+  if (normalized.includes('qstarz')) return 'QSTARZ LT-8000GT · EXTERNAL GPS';
+  if (normalized.includes('racebox')) return 'RACEBOX MINI S · EXTERNAL GPS';
+  if (normalized.includes('xgps') || normalized.includes('dual')) return 'DUAL XGPS160 · EXTERNAL GPS';
+  if (normalized.includes('aksys app')) return 'AKSYS APP EXPORT';
+  if (normalized.includes('app_verified') || normalized === 'app') return 'AKSYS APP VERIFIED';
+  if (normalized.includes('gpx')) return 'GPX · EXTERNAL GPS';
+  if (normalized.includes('csv')) return 'CSV · EXTERNAL GPS';
+  return `${source.toUpperCase()} · EXTERNAL GPS`;
+}
 function verificationBadge(row) {
   const imported = row?.isOfficial === false || row?.verificationStatus === 'imported' || String(row?.source || '').includes('import');
   return imported
-    ? '<span style="color:var(--yellow);">IMPORTED · NON-OFFICIAL</span>'
+    ? `<span style="color:var(--yellow);">${escapeHtml(sourceDisplayName(row?.externalGpsSource || row?.gpsSource || row?.timingSourceLabel || row?.source))} · NON-OFFICIAL</span>`
     : '<span style="color:var(--green);">APP VERIFIED</span>';
 }
 </script>
