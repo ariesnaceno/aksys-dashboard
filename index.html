@@ -1977,9 +1977,9 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
       <div class="split-grid">
         <div class="info-card">
           <div class="info-label">Pro Session Reviewer</div>
-          <div class="info-sub">Import AKSYS CSV/GPX exports or a complete Qstarz workspace. For Qstarz sessions, select sessionList.db, sana_1.db, and sess_1.db together so laps and 25 Hz waypoints are merged correctly.</div>
+          <div class="info-sub">Import AKSYS CSV/GPX exports, a complete Qstarz workspace, or RaceBox Mini S CSV/GPX/KML/VBO files. For Qstarz sessions, select sessionList.db, sana_1.db, and sess_1.db together. For RaceBox, select the CSV and VBO together for lap timing plus the virtual finish line.</div>
           <div style="margin-top:14px;">
-            <input type="file" id="import-file" accept=".csv,.gpx,.db,.sqlite,.sqlite3" multiple onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
+            <input type="file" id="import-file" accept=".csv,.gpx,.kml,.vbo,.db,.sqlite,.sqlite3" multiple onchange="handleImportFile(event)" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);">
           </div>
           <div class="form-inline" style="margin-top:12px;">
             <select id="import-circuit">
@@ -3391,10 +3391,14 @@ async function handleImportFile(event) {
     pendingImportAnalysis = null;
     if (files.length > 1 && extensions.every(e => ['db','sqlite','sqlite3'].includes(e))) {
       pendingImportedLaps = await parseExternalLoggerDbFiles(files);
+    } else if (extensions.every(e => ['csv','gpx','kml','vbo'].includes(e)) && extensions.some(e => e === 'vbo' || e === 'csv')) {
+      pendingImportedLaps = await parseRaceBoxFiles(files);
     } else if (files.length > 1) {
-      throw new Error('Select one CSV/GPX file, or select only Qstarz DB files together.');
+      throw new Error('Select one CSV/GPX/KML/VBO file, a RaceBox CSV+VBO bundle, or only Qstarz DB files together.');
     } else if (ext === 'csv') pendingImportedLaps = parseImportedCsv(await file.text(), file.name);
     else if (ext === 'gpx') pendingImportedLaps = parseImportedGpx(await file.text(), file.name);
+    else if (ext === 'kml') pendingImportedLaps = parseRaceBoxKml(await file.text(), file.name).laps;
+    else if (ext === 'vbo') pendingImportedLaps = parseRaceBoxVbo(await file.text(), file.name).laps;
     else if (['db','sqlite','sqlite3'].includes(ext)) pendingImportedLaps = await parseExternalLoggerDb(await file.arrayBuffer(), file.name);
     else throw new Error('Unsupported file type');
     renderImportPreview();
@@ -3423,6 +3427,7 @@ function parseImportedCsv(text, fileName) {
   const lines = text.split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return [];
   const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  if (isRaceBoxCsvHeaders(headers, fileName)) return parseRaceBoxCsv(text, fileName).laps;
   const rows = lines.slice(1).map(line => {
     const cells = splitCsvLine(line);
     return Object.fromEntries(headers.map((h,i) => [h, cells[i] || '']));
@@ -3458,6 +3463,13 @@ function csvRowToPoint(row, idx) {
     heading: numberOrNull(row.heading || row.course),
     altitude: numberOrNull(row.altitude || row.alt),
     gForce: numberOrNull(row.gforce || row.g_force || row.g || row.maxg),
+    gForceX: numberOrNull(row.gforcex || row.g_force_x || row.gx),
+    gForceY: numberOrNull(row.gforcey || row.g_force_y || row.gy),
+    gForceZ: numberOrNull(row.gforcez || row.g_force_z || row.gz),
+    gyroX: numberOrNull(row.gyrox || row.gyro_x),
+    gyroY: numberOrNull(row.gyroy || row.gyro_y),
+    gyroZ: numberOrNull(row.gyroz || row.gyro_z),
+    satellites: numberOrNull(row.satellites || row.sats || row.siv),
     leanAngle: numberOrNull(row.leanangle || row.lean_angle || row.inclination),
     lapNumber: Number(row.lap || row.lapnumber || row.lap_number || 0) || null
   };
@@ -3478,6 +3490,7 @@ function splitCsvLine(line) {
 
 function parseImportedGpx(text, fileName) {
   const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (/racebox/i.test(text.slice(0, 2000)) || /racebox/i.test(fileName)) return parseRaceBoxGpx(text, fileName).laps;
   const pts = Array.from(doc.querySelectorAll('trkpt'));
   if (pts.length < 2) return [];
   const points = pts.map((pt, idx) => ({
@@ -3502,6 +3515,341 @@ function parseImportedGpx(text, fileName) {
   }] : [];
   pendingImportAnalysis = buildImportAnalysis({ fileName, source: 'GPX route', laps, points });
   return laps.length ? laps : inferLapsFromPoints(points, fileName, 'website_gpx_route_import');
+}
+
+async function parseRaceBoxFiles(files) {
+  const entries = [];
+  for (const file of files) {
+    entries.push({ fileName: file.name, ext: file.name.split('.').pop().toLowerCase(), text: await file.text() });
+  }
+  const csv = entries.find(e => e.ext === 'csv') ? parseRaceBoxCsv(entries.find(e => e.ext === 'csv').text, entries.find(e => e.ext === 'csv').fileName) : null;
+  const vbo = entries.find(e => e.ext === 'vbo') ? parseRaceBoxVbo(entries.find(e => e.ext === 'vbo').text, entries.find(e => e.ext === 'vbo').fileName, { silentNoLaps: true }) : null;
+  const gpx = entries.find(e => e.ext === 'gpx') ? parseRaceBoxGpx(entries.find(e => e.ext === 'gpx').text, entries.find(e => e.ext === 'gpx').fileName, { silentNoLaps: true }) : null;
+  const kml = entries.find(e => e.ext === 'kml') ? parseRaceBoxKml(entries.find(e => e.ext === 'kml').text, entries.find(e => e.ext === 'kml').fileName, { silentNoLaps: true }) : null;
+  const points = vbo?.points?.length ? vbo.points : (csv?.points?.length ? csv.points : (gpx?.points?.length ? gpx.points : (kml?.points || [])));
+  const fileName = entries.map(e => e.fileName).join(' + ');
+  const metadata = { ...(gpx?.metadata || {}), ...(csv?.metadata || {}), ...(vbo?.metadata || {}) };
+  const finishLine = vbo?.finishLine || gpx?.finishLine || null;
+  const laps = (csv?.laps?.length ? csv.laps : inferLapsFromRaceBoxLine(points, finishLine, fileName)).map((lap, idx) => ({
+    ...lap,
+    lapNumber: lap.lapNumber || idx + 1,
+    externalGpsSource: 'RaceBox Mini S',
+    timingSourceLabel: sourceDisplayName('RaceBox Mini S'),
+    source: 'racebox_import',
+    importFileName: fileName,
+    finishLine,
+    declaredHz: 25,
+    trackPointCount: lap.trackPointCount || points.length
+  }));
+  pendingImportAnalysis = buildImportAnalysis({
+    fileName,
+    source: `RaceBox Mini S${metadata.serialNumber ? ` ${metadata.serialNumber}` : ''}`,
+    laps,
+    points,
+    declaredHz: 25,
+    trackName: metadata.trackName || 'Clark International Speedway',
+    sessionDate: metadata.sessionDate || null,
+    finishLine,
+    metadata,
+    satelliteSummary: summarizeSatellites(points)
+  });
+  if (!laps.length && !points.length) throw new Error('No RaceBox points or laps found');
+  return laps;
+}
+
+function isRaceBoxCsvHeaders(headers, fileName) {
+  const set = new Set(headers);
+  return /racebox/i.test(fileName) || (set.has('record') && set.has('latitude') && set.has('longitude') && set.has('leanangle') && set.has('gyrox'));
+}
+
+function parseRaceBoxCsv(text, fileName) {
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const headers = splitCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const rows = lines.slice(1).map(line => {
+    const cells = splitCsvLine(line);
+    return Object.fromEntries(headers.map((h, i) => [h, cells[i] || '']));
+  });
+  const points = rows.map((row, idx) => csvRowToPoint(row, idx)).filter(Boolean);
+  const laps = raceBoxLapsFromNumberedPoints(points, fileName);
+  pendingImportAnalysis = buildImportAnalysis({
+    fileName,
+    source: 'RaceBox Mini S CSV',
+    laps,
+    points,
+    declaredHz: 25,
+    trackName: 'Clark International Speedway',
+    satelliteSummary: summarizeSatellites(points)
+  });
+  return { fileName, laps, points, metadata: { trackName: 'Clark International Speedway' } };
+}
+
+function raceBoxLapsFromNumberedPoints(points, fileName) {
+  const groups = [];
+  let current = null;
+  for (const point of points) {
+    const lapNumber = Number(point.lapNumber || 0);
+    if (lapNumber <= 0) {
+      if (current) { groups.push(current); current = null; }
+      continue;
+    }
+    if (!current || current.lapNumber !== lapNumber) {
+      if (current) groups.push(current);
+      current = { lapNumber, points: [] };
+    }
+    current.points.push(point);
+  }
+  if (current) groups.push(current);
+  return groups.map(group => {
+    const first = group.points[0];
+    const last = group.points[group.points.length - 1];
+    const seconds = first?.timestamp && last?.timestamp ? (last.timestamp - first.timestamp) / 1000 : null;
+    if (!seconds || seconds <= 5) return null;
+    return {
+      lapNumber: group.lapNumber,
+      lapSeconds: seconds,
+      topSpeed: Math.max(0, ...group.points.map(p => Number(p.speed || 0)).filter(Number.isFinite)) || null,
+      maxG: Math.max(0, ...group.points.map(p => Math.abs(Number(p.gForce || 0))).filter(Number.isFinite)) || null,
+      maxLeanAngle: Math.max(0, ...group.points.map(p => Math.abs(Number(p.leanAngle || 0))).filter(Number.isFinite)) || null,
+      externalGpsSource: 'RaceBox Mini S',
+      timingSourceLabel: sourceDisplayName('RaceBox Mini S'),
+      source: 'racebox_csv_import',
+      importFileName: fileName,
+      trackPointCount: group.points.length,
+      startTimestamp: first?.timestamp || null,
+      finishTimestamp: last?.timestamp || null,
+      startLat: first?.lat || null,
+      startLon: first?.lon || null,
+      finishLat: last?.lat || null,
+      finishLon: last?.lon || null,
+      declaredHz: 25
+    };
+  }).filter(Boolean);
+}
+
+function parseRaceBoxGpx(text, fileName, options = {}) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  const waypoints = Array.from(doc.querySelectorAll('wpt')).map(wpt => ({
+    name: wpt.querySelector('name')?.textContent || '',
+    lat: Number(wpt.getAttribute('lat')),
+    lon: Number(wpt.getAttribute('lon'))
+  })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+  const points = Array.from(doc.querySelectorAll('trkpt')).map((pt, idx) => ({
+    lat: Number(pt.getAttribute('lat')),
+    lon: Number(pt.getAttribute('lon')),
+    timestamp: parsePointTime(pt.querySelector('time')?.textContent, idx),
+    speed: numberOrNull(pt.querySelector('speed')?.textContent) || 0,
+    altitude: numberOrNull(pt.querySelector('ele')?.textContent),
+    satellites: numberOrNull(pt.querySelector('siv')?.textContent)
+  })).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon));
+  const finishLine = raceBoxFinishLineFromWaypoints(waypoints);
+  const laps = inferLapsFromRaceBoxLine(points, finishLine, fileName);
+  const metadata = {
+    trackName: doc.querySelector('metadata desc')?.textContent || 'RaceBox Session',
+    sessionDate: points[0]?.timestamp || null
+  };
+  if (!options.silentNoLaps) pendingImportAnalysis = buildImportAnalysis({
+    fileName,
+    source: 'RaceBox Mini S GPX',
+    laps,
+    points,
+    declaredHz: 25,
+    trackName: metadata.trackName,
+    sessionDate: metadata.sessionDate,
+    finishLine,
+    metadata,
+    satelliteSummary: summarizeSatellites(points)
+  });
+  return { fileName, laps, points, metadata, finishLine };
+}
+
+function parseRaceBoxKml(text, fileName, options = {}) {
+  const coords = Array.from(text.matchAll(/<coordinates[^>]*>([\s\S]*?)<\/coordinates>/gi))
+    .flatMap(match => match[1].trim().split(/\s+/))
+    .map((raw, idx) => {
+      const [lon, lat, altitude] = raw.split(',').map(Number);
+      return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon, altitude: numberOrNull(altitude), timestamp: new Date(Date.now() + idx * 40) } : null;
+    }).filter(Boolean);
+  const laps = inferLapsFromPoints(coords, fileName, 'racebox_kml_route_import').map(l => ({
+    ...l,
+    externalGpsSource: 'RaceBox Mini S',
+    timingSourceLabel: sourceDisplayName('RaceBox Mini S'),
+    source: 'racebox_kml_import'
+  }));
+  if (!options.silentNoLaps) pendingImportAnalysis = buildImportAnalysis({
+    fileName,
+    source: 'RaceBox Mini S KML',
+    laps,
+    points: coords,
+    declaredHz: null,
+    trackName: 'RaceBox Route'
+  });
+  return { fileName, laps, points: coords, metadata: { trackName: 'RaceBox Route' } };
+}
+
+function parseRaceBoxVbo(text, fileName, options = {}) {
+  const lines = text.split(/\r?\n/);
+  const metadata = {};
+  let section = '';
+  let columnNames = [];
+  const points = [];
+  let finishLine = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const sectionMatch = line.match(/^\[(.+)]$/);
+    if (sectionMatch) { section = sectionMatch[1].toLowerCase(); continue; }
+    if (section === 'comments') {
+      if (/serial number/i.test(line)) metadata.serialNumber = line.split(':').slice(1).join(':').trim();
+      if (/utc date started/i.test(line)) metadata.sessionDate = parseRaceBoxUtcDate(line.split(':').slice(1).join(':').trim());
+      if (/venue/i.test(line)) metadata.trackName = line.split(':').slice(1).join(':').trim();
+    } else if (section === 'laptiming' && /^start/i.test(line)) {
+      finishLine = parseRaceBoxFinishLine(line);
+    } else if (section === 'column names') {
+      columnNames = line.split(/\s+/);
+    } else if (section === 'data') {
+      const values = line.split(/\s+/);
+      if (!columnNames.length || values.length < columnNames.length) continue;
+      const row = Object.fromEntries(columnNames.map((name, idx) => [name, values[idx]]));
+      const lat = raceBoxCoordToDecimal(row.lat, false);
+      const lon = raceBoxCoordToDecimal(row.lng, true);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      const idx = points.length;
+      const longAcc = numberOrNull(row.LongAcc);
+      const vertAcc = numberOrNull(row.VertAcc);
+      points.push({
+        lat,
+        lon,
+        timestamp: parseRaceBoxVboTime(row.time, metadata.sessionDate, idx),
+        speed: Number(row.velocity || 0) || 0,
+        heading: numberOrNull(row.heading),
+        altitude: numberOrNull(row.height),
+        gForce: Number.isFinite(longAcc) && Number.isFinite(vertAcc) ? Math.sqrt(longAcc * longAcc + vertAcc * vertAcc) : null,
+        gForceX: longAcc,
+        gForceZ: vertAcc,
+        gyroX: numberOrNull(row['x-rotation-gyroscope']),
+        gyroY: numberOrNull(row['y-rotation-gyroscope']),
+        gyroZ: numberOrNull(row['z-rotation-gyroscope']),
+        leanAngle: numberOrNull(row['lean-angle']),
+        satellites: numberOrNull(row.sats)
+      });
+    }
+  }
+  const laps = inferLapsFromRaceBoxLine(points, finishLine, fileName).map(l => ({
+    ...l,
+    externalGpsSource: 'RaceBox Mini S',
+    timingSourceLabel: sourceDisplayName('RaceBox Mini S'),
+    source: 'racebox_vbo_import',
+    declaredHz: 25,
+    finishLine
+  }));
+  if (!options.silentNoLaps) pendingImportAnalysis = buildImportAnalysis({
+    fileName,
+    source: `RaceBox Mini S${metadata.serialNumber ? ` ${metadata.serialNumber}` : ''}`,
+    laps,
+    points,
+    declaredHz: 25,
+    trackName: metadata.trackName || 'RaceBox Session',
+    sessionDate: metadata.sessionDate || null,
+    finishLine,
+    metadata,
+    satelliteSummary: summarizeSatellites(points)
+  });
+  return { fileName, laps, points, metadata, finishLine };
+}
+
+function inferLapsFromRaceBoxLine(points, finishLine, fileName) {
+  if (!points?.length || !finishLine?.a || !finishLine?.b) return inferLapsFromPoints(points, fileName, 'racebox_route_import');
+  const crossingIndexes = [];
+  for (let i = 1; i < points.length; i++) {
+    if (segmentsIntersect(points[i - 1], points[i], finishLine.a, finishLine.b)) {
+      const previousIndex = crossingIndexes[crossingIndexes.length - 1];
+      if (previousIndex === undefined || (points[i].timestamp - points[previousIndex].timestamp) / 1000 > 60) crossingIndexes.push(i);
+    }
+  }
+  const laps = [];
+  for (let i = 1; i < crossingIndexes.length; i++) {
+    const startIdx = crossingIndexes[i - 1];
+    const endIdx = crossingIndexes[i];
+    const lapPoints = points.slice(startIdx, endIdx + 1);
+    const seconds = (points[endIdx].timestamp - points[startIdx].timestamp) / 1000;
+    if (seconds <= 30) continue;
+    laps.push({
+      lapNumber: laps.length + 1,
+      lapSeconds: seconds,
+      topSpeed: Math.max(0, ...lapPoints.map(p => Number(p.speed || 0)).filter(Number.isFinite)) || null,
+      source: 'racebox_line_crossing_import',
+      importFileName: fileName,
+      trackPointCount: lapPoints.length,
+      startTimestamp: points[startIdx].timestamp,
+      finishTimestamp: points[endIdx].timestamp,
+      startLat: points[startIdx].lat,
+      startLon: points[startIdx].lon,
+      finishLat: points[endIdx].lat,
+      finishLon: points[endIdx].lon
+    });
+  }
+  return laps.length ? laps : inferLapsFromPoints(points, fileName, 'racebox_route_import');
+}
+
+function parseRaceBoxFinishLine(line) {
+  const matches = line.match(/[+-]\d+\.\d+/g);
+  if (!matches || matches.length < 4) return null;
+  return {
+    a: { lat: raceBoxCoordToDecimal(matches[0], false), lon: raceBoxCoordToDecimal(matches[1], true) },
+    b: { lat: raceBoxCoordToDecimal(matches[2], false), lon: raceBoxCoordToDecimal(matches[3], true) },
+    label: 'RaceBox Start / Finish'
+  };
+}
+
+function raceBoxFinishLineFromWaypoints(waypoints) {
+  const start = waypoints.find(w => /start/i.test(w.name));
+  if (!start) return null;
+  const meters = 18;
+  const latOffset = meters / 111320;
+  return {
+    a: { lat: start.lat - latOffset / 2, lon: start.lon },
+    b: { lat: start.lat + latOffset / 2, lon: start.lon },
+    label: 'RaceBox GPX Start'
+  };
+}
+
+function raceBoxCoordToDecimal(value, isLongitude) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const decimal = n / 60;
+  return isLongitude ? Math.abs(decimal) : decimal;
+}
+
+function parseRaceBoxUtcDate(value) {
+  const match = String(value || '').match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+  if (!match) return null;
+  const [, dd, mm, yyyy, hh, min] = match;
+  return new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min), 0));
+}
+
+function parseRaceBoxVboTime(value, baseDate, index) {
+  const text = String(value || '');
+  const match = text.match(/^(\d{2})(\d{2})(\d{2})(?:\.(\d+))?$/);
+  if (!match || !baseDate) return new Date(Date.now() + index * 40);
+  const [, hh, mm, ss, fraction = '0'] = match;
+  const ms = Number(`0.${fraction}`) * 1000;
+  return new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate(), Number(hh), Number(mm), Number(ss), Math.round(ms)));
+}
+
+function summarizeSatellites(points) {
+  const sats = (points || []).map(p => Number(p.satellites)).filter(Number.isFinite);
+  if (!sats.length) return null;
+  return {
+    min: Math.min(...sats),
+    max: Math.max(...sats),
+    avg: sats.reduce((a, b) => a + b, 0) / sats.length
+  };
+}
+
+function segmentsIntersect(p1, p2, q1, q2) {
+  const o = (a, b, c) => (b.lon - a.lon) * (c.lat - a.lat) - (b.lat - a.lat) * (c.lon - a.lon);
+  const o1 = o(p1, p2, q1), o2 = o(p1, p2, q2), o3 = o(q1, q2, p1), o4 = o(q1, q2, p2);
+  return o1 * o2 < 0 && o3 * o4 < 0;
 }
 
 async function parseExternalLoggerDb(buffer, fileName) {
@@ -3643,7 +3991,7 @@ function readWaypointPoints(database) {
   }
 }
 
-function buildImportAnalysis({ fileName, source, laps = [], points = [], declaredHz = null, trackName = null, sessionDate = null }) {
+function buildImportAnalysis({ fileName, source, laps = [], points = [], declaredHz = null, trackName = null, sessionDate = null, finishLine = null, metadata = null, satelliteSummary = null }) {
   const detectedHz = detectSampleRate(points);
   const enriched = enrichPointSpeeds(points);
   const bestLap = laps.length ? Math.min(...laps.map(l => l.lapSeconds).filter(Number.isFinite)) : null;
@@ -3661,6 +4009,9 @@ function buildImportAnalysis({ fileName, source, laps = [], points = [], declare
     detectedHz,
     trackName,
     sessionDate,
+    finishLine,
+    metadata,
+    satelliteSummary,
     bestLap: Number.isFinite(bestLap) ? bestLap : null,
     topSpeed,
     brakingZones,
@@ -3833,9 +4184,12 @@ function renderImportAnalysis() {
         <div class="info-card"><div class="info-label">Top Speed</div><div class="info-value">${a.topSpeed ? Math.round(a.topSpeed)+' km/h' : '—'}</div></div>
         <div class="info-card"><div class="info-label">Braking Zones</div><div class="info-value">${a.brakingZones.length}</div></div>
         <div class="info-card"><div class="info-label">Accel Zones</div><div class="info-value">${a.accelZones.length}</div></div>
+        <div class="info-card"><div class="info-label">Satellites</div><div class="info-value">${a.satelliteSummary ? Math.round(a.satelliteSummary.avg) : '—'}</div><div class="info-sub">${a.satelliteSummary ? `Range ${a.satelliteSummary.min}–${a.satelliteSummary.max}` : 'Not provided'}</div></div>
+        <div class="info-card"><div class="info-label">Finish Line</div><div class="info-value">${a.finishLine ? 'VIRTUAL LINE' : '—'}</div><div class="info-sub">${a.finishLine ? `${a.finishLine.a.lat.toFixed(6)}, ${a.finishLine.a.lon.toFixed(6)} → ${a.finishLine.b.lat.toFixed(6)}, ${a.finishLine.b.lon.toFixed(6)}` : 'No S/F endpoints in file'}</div></div>
+        <div class="info-card"><div class="info-label">Device</div><div class="info-value">${escapeHtml(a.metadata?.serialNumber || sourceDisplayName(a.source).split(' · ')[0])}</div><div class="info-sub">${a.sessionDate ? new Date(a.sessionDate).toLocaleString() : 'Session date unavailable'}</div></div>
       </div>
       <div style="margin-top:14px;background:#05070a;border-radius:18px;border:1px solid var(--border);padding:12px;">
-        ${renderRouteSvg(a.points)}
+        ${renderRouteSvg(a.points, a.finishLine)}
       </div>
       <div class="mini-table" style="margin-top:14px;">
         ${renderZoneRows(a.brakingZones, 'BRAKING', 'red')}
@@ -3855,7 +4209,7 @@ function renderZoneRows(zones, label, colorName) {
     </div>`).join('');
 }
 
-function renderRouteSvg(points) {
+function renderRouteSvg(points, finishLine = null) {
   if (!points || points.length < 2) {
     return '<div class="empty-state"><div class="empty-text">NO GPS ROUTE POINTS IN THIS FILE</div></div>';
   }
@@ -3872,10 +4226,15 @@ function renderRouteSvg(points) {
   const path = sampled.map((p, i) => `${i ? 'L' : 'M'}${pointToSvg(p)}`).join(' ');
   const start = pointToSvg(sampled[0]);
   const end = pointToSvg(sampled[sampled.length - 1]);
+  const finishLineSvg = finishLine?.a && finishLine?.b
+    ? `<line x1="${pointToSvg(finishLine.a).split(',')[0]}" y1="${pointToSvg(finishLine.a).split(',')[1]}" x2="${pointToSvg(finishLine.b).split(',')[0]}" y2="${pointToSvg(finishLine.b).split(',')[1]}" stroke="#ffd000" stroke-width="4" stroke-linecap="round"/>
+       <text x="18" y="48" fill="#ffd000" font-size="11" font-family="Inter, sans-serif" letter-spacing="2">RACEBOX S/F LINE</text>`
+    : '';
   return `<svg viewBox="0 0 ${width} ${height}" style="display:block;width:100%;height:auto;">
     <rect width="${width}" height="${height}" rx="16" fill="#05070a"/>
     <path d="${path}" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="${path}" fill="none" stroke="#ff1730" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${finishLineSvg}
     <circle cx="${start.split(',')[0]}" cy="${start.split(',')[1]}" r="5" fill="#2edb63"/>
     <circle cx="${end.split(',')[0]}" cy="${end.split(',')[1]}" r="5" fill="#ff1730"/>
     <text x="18" y="28" fill="#ffffff" opacity="0.55" font-size="12" font-family="Inter, sans-serif" letter-spacing="2">GPS RACING LINE</text>
