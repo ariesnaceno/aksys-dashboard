@@ -3472,10 +3472,12 @@ function csvRowToPoint(row, idx) {
   const lon = Number(row.lon || row.lng || row.longitude || row.gps_lon || row['longitude deg']);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) < 0.0001 || Math.abs(lon) < 0.0001) return null;
   const timestamp = parsePointTime(row.timestamp || row.time || row.datetime || row.date_time, idx);
+  const loggerSpeed = numberOrNull(row.speed || row.speed_kmh || row['speed km/h'] || row.speedkmh);
   return {
     lat, lon,
     timestamp,
-    speed: Number(row.speed || row.speed_kmh || row['speed km/h'] || row.speedkmh || 0) || 0,
+    speed: Number.isFinite(loggerSpeed) ? loggerSpeed : null,
+    hasLoggerSpeed: Number.isFinite(loggerSpeed),
     heading: numberOrNull(row.heading || row.course),
     altitude: numberOrNull(row.altitude || row.alt),
     gForce: numberOrNull(row.gforce || row.g_force || row.g || row.maxg),
@@ -3738,6 +3740,7 @@ function parseRaceBoxVbo(text, fileName, options = {}) {
         lon,
         timestamp: parseRaceBoxVboTime(row.time, metadata.sessionDate, idx),
         speed: Number(row.velocity || 0) || 0,
+        hasLoggerSpeed: true,
         heading: numberOrNull(row.heading),
         altitude: numberOrNull(row.height),
         gForce: Number.isFinite(longAcc) && Number.isFinite(vertAcc) ? Math.sqrt(longAcc * longAcc + vertAcc * vertAcc) : null,
@@ -4107,7 +4110,7 @@ function detectSampleRate(points) {
 function enrichPointSpeeds(points) {
   if (!points || points.length < 2) return points || [];
   return points.map((point, index) => {
-    if (Number(point.speed || 0) > 0 || index === 0) return point;
+    if (point.hasLoggerSpeed || Number(point.speed || 0) > 0 || index === 0) return point;
     const previous = points[index - 1];
     const dt = (point.timestamp - previous.timestamp) / 1000;
     if (dt <= 0) return point;
