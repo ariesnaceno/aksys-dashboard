@@ -5,6 +5,10 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      ".git/**",
+      ".firebase/**",
+      ".firebaserc",
+      ".DS_Store",
       "**/node_modules/**"
     ],
     "headers": [
