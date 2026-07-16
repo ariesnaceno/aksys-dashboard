@@ -4029,6 +4029,7 @@ function readWaypointPoints(database) {
 function buildImportAnalysis({ fileName, source, laps = [], points = [], declaredHz = null, trackName = null, sessionDate = null, finishLine = null, metadata = null, satelliteSummary = null }) {
   const detectedHz = detectSampleRate(points);
   const enriched = enrichPointSpeeds(points);
+  const smoothing = smoothRacingLine(enriched, { hz: declaredHz || detectedHz });
   const droppedPacketSummary = estimateDroppedPackets(enriched, declaredHz || detectedHz);
   const bestLap = laps.length ? Math.min(...laps.map(l => l.lapSeconds).filter(Number.isFinite)) : null;
   const topSpeed = Math.max(0, ...enriched.map(p => Number(p.speed || 0)).filter(Number.isFinite));
@@ -4040,6 +4041,8 @@ function buildImportAnalysis({ fileName, source, laps = [], points = [], declare
     source,
     laps,
     points: enriched,
+    smoothedPoints: smoothing.points,
+    smoothingSummary: smoothing.summary,
     pointCount: enriched.length,
     declaredHz,
     detectedHz,
@@ -4099,6 +4102,68 @@ function enrichPointSpeeds(points) {
     if (dt <= 0) return point;
     return { ...point, speed: haversineMeters(previous, point) / dt * 3.6 };
   });
+}
+
+function smoothRacingLine(points, options = {}) {
+  if (!points || points.length < 5) {
+    return { points: points || [], summary: { mode: 'raw', removedSpikes: 0, window: 1, sourcePoints: points?.length || 0, outputPoints: points?.length || 0 } };
+  }
+  const hz = Number(options.hz || detectSampleRate(points) || 1);
+  const sorted = points
+    .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon))
+    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  const despiked = [];
+  let removedSpikes = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const prev = despiked[despiked.length - 1];
+    const cur = sorted[i];
+    const next = sorted[i + 1];
+    if (prev && next) {
+      const dtPrev = Math.max(0.001, (cur.timestamp - prev.timestamp) / 1000);
+      const dtNext = Math.max(0.001, (next.timestamp - cur.timestamp) / 1000);
+      const speedPrev = haversineMeters(prev, cur) / dtPrev * 3.6;
+      const speedNext = haversineMeters(cur, next) / dtNext * 3.6;
+      const loggerSpeed = Number(cur.speed || 0);
+      const impossibleJump = speedPrev > 340 && speedNext > 340 && (!loggerSpeed || loggerSpeed < Math.min(speedPrev, speedNext) * 0.45);
+      if (impossibleJump) {
+        removedSpikes += 1;
+        continue;
+      }
+    }
+    despiked.push(cur);
+  }
+  const window = hz >= 20 ? 7 : (hz >= 10 ? 5 : 3);
+  const half = Math.floor(window / 2);
+  const smoothed = despiked.map((point, index) => {
+    const start = Math.max(0, index - half);
+    const end = Math.min(despiked.length - 1, index + half);
+    let latSum = 0, lonSum = 0, weightSum = 0;
+    for (let i = start; i <= end; i++) {
+      const distance = Math.abs(i - index);
+      const weight = half + 1 - distance;
+      latSum += despiked[i].lat * weight;
+      lonSum += despiked[i].lon * weight;
+      weightSum += weight;
+    }
+    return {
+      ...point,
+      rawLat: point.lat,
+      rawLon: point.lon,
+      lat: latSum / weightSum,
+      lon: lonSum / weightSum
+    };
+  });
+  return {
+    points: smoothed,
+    summary: {
+      mode: hz >= 10 ? 'high-rate moving-window' : 'light moving-window',
+      removedSpikes,
+      window,
+      sourcePoints: sorted.length,
+      outputPoints: smoothed.length,
+      hz
+    }
+  };
 }
 
 function detectSpeedZones(points, mode) {
@@ -4245,11 +4310,12 @@ function renderImportAnalysis() {
         <div class="info-card"><div class="info-label">Accel Zones</div><div class="info-value">${a.accelZones.length}</div></div>
         <div class="info-card"><div class="info-label">Satellites</div><div class="info-value">${a.satelliteSummary ? Math.round(a.satelliteSummary.avg) : '—'}</div><div class="info-sub">${a.satelliteSummary ? `Range ${a.satelliteSummary.min}–${a.satelliteSummary.max}` : 'Not provided'}</div></div>
         <div class="info-card"><div class="info-label">Dropped Samples</div><div class="info-value">${a.droppedPacketSummary ? a.droppedPacketSummary.estimatedDropped : '—'}</div><div class="info-sub">${a.droppedPacketSummary ? `${a.droppedPacketSummary.longGaps} long gaps detected` : 'Need timestamps'}</div></div>
+        <div class="info-card"><div class="info-label">Line Smoothing</div><div class="info-value">${a.smoothingSummary ? `${a.smoothingSummary.window}pt` : '—'}</div><div class="info-sub">${a.smoothingSummary ? `${a.smoothingSummary.mode} · ${a.smoothingSummary.removedSpikes} spikes removed` : 'Raw route'}</div></div>
         <div class="info-card"><div class="info-label">Finish Line</div><div class="info-value">${a.finishLine ? 'VIRTUAL LINE' : '—'}</div><div class="info-sub">${a.finishLine ? `${a.finishLine.a.lat.toFixed(6)}, ${a.finishLine.a.lon.toFixed(6)} → ${a.finishLine.b.lat.toFixed(6)}, ${a.finishLine.b.lon.toFixed(6)}` : 'No S/F endpoints in file'}</div></div>
         <div class="info-card"><div class="info-label">Device</div><div class="info-value">${escapeHtml(a.metadata?.serialNumber || sourceDisplayName(a.source).split(' · ')[0])}</div><div class="info-sub">${a.sessionDate ? new Date(a.sessionDate).toLocaleString() : 'Session date unavailable'}</div></div>
       </div>
       <div style="margin-top:14px;background:#05070a;border-radius:18px;border:1px solid var(--border);padding:12px;">
-        ${renderRouteSvg(a.points, a.finishLine)}
+        ${renderRouteSvg(a.smoothedPoints || a.points, a.finishLine, a.points)}
       </div>
       <div class="mini-table" style="margin-top:14px;">
         ${renderZoneRows(a.brakingZones, 'BRAKING', 'red')}
@@ -4289,7 +4355,8 @@ async function renderReferenceComparison() {
   const timeDelta = appSeconds && raceBoxBest?.lapSeconds ? appSeconds - raceBoxBest.lapSeconds : null;
   const speedDelta = app?.topSpeed && raceBox.topSpeed ? Number(app.topSpeed) - raceBox.topSpeed : null;
   const appPoints = normalizeSessionPoints(app);
-  const lineDelta = compareRouteShape(raceBox.points, appPoints);
+  const raceBoxLinePoints = raceBox.smoothedPoints || raceBox.points;
+  const lineDelta = compareRouteShape(raceBoxLinePoints, appPoints);
   const brakingDelta = app?.brakingZones?.length !== undefined
     ? Number(app.brakingZones.length || 0) - Number(raceBox.brakingZones?.length || 0)
     : null;
@@ -4321,7 +4388,7 @@ async function renderReferenceComparison() {
         <div class="info-card"><div class="info-label">Recommendation</div><div class="info-value">${comparisonRecommendation(timeDelta, lineDelta, app)}</div><div class="info-sub">${comparisonRecommendationDetail(timeDelta, lineDelta, app)}</div></div>
       </div>
       <div style="margin-top:14px;background:#05070a;border-radius:18px;border:1px solid var(--border);padding:12px;">
-        ${renderComparisonRouteSvg(raceBox.points, appPoints, raceBox.finishLine)}
+        ${renderComparisonRouteSvg(raceBoxLinePoints, appPoints, raceBox.finishLine)}
       </div>
       <div class="info-sub" style="margin-top:12px;">RaceBox is treated as an external reference. AKSYS app-verified laps remain separate from imported RaceBox leaderboard entries.</div>
     </div>`;
@@ -4455,12 +4522,14 @@ function renderZoneRows(zones, label, colorName) {
     </div>`).join('');
 }
 
-function renderRouteSvg(points, finishLine = null) {
+function renderRouteSvg(points, finishLine = null, rawPoints = null) {
   if (!points || points.length < 2) {
     return '<div class="empty-state"><div class="empty-text">NO GPS ROUTE POINTS IN THIS FILE</div></div>';
   }
   const sampled = points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 900)) === 0);
-  const lats = sampled.map(p => p.lat), lons = sampled.map(p => p.lon);
+  const sampledRaw = rawPoints?.length ? rawPoints.filter((_, i) => i % Math.max(1, Math.floor(rawPoints.length / 900)) === 0) : [];
+  const boundsPoints = sampledRaw.length ? [...sampled, ...sampledRaw] : sampled;
+  const lats = boundsPoints.map(p => p.lat), lons = boundsPoints.map(p => p.lon);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLon = Math.min(...lons), maxLon = Math.max(...lons);
   const pad = 22, width = 720, height = 300;
   const xScale = (width - pad * 2) / Math.max(0.000001, maxLon - minLon);
@@ -4470,6 +4539,7 @@ function renderRouteSvg(points, finishLine = null) {
   const yOffset = (height - (maxLat - minLat) * scale) / 2;
   const pointToSvg = p => `${((p.lon - minLon) * scale + xOffset).toFixed(1)},${(height - ((p.lat - minLat) * scale + yOffset)).toFixed(1)}`;
   const path = sampled.map((p, i) => `${i ? 'L' : 'M'}${pointToSvg(p)}`).join(' ');
+  const rawPath = sampledRaw.length ? sampledRaw.map((p, i) => `${i ? 'L' : 'M'}${pointToSvg(p)}`).join(' ') : '';
   const start = pointToSvg(sampled[0]);
   const end = pointToSvg(sampled[sampled.length - 1]);
   const finishLineSvg = finishLine?.a && finishLine?.b
@@ -4478,12 +4548,13 @@ function renderRouteSvg(points, finishLine = null) {
     : '';
   return `<svg viewBox="0 0 ${width} ${height}" style="display:block;width:100%;height:auto;">
     <rect width="${width}" height="${height}" rx="16" fill="#05070a"/>
+    ${rawPath ? `<path d="${rawPath}" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
     <path d="${path}" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="${path}" fill="none" stroke="#ff1730" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     ${finishLineSvg}
     <circle cx="${start.split(',')[0]}" cy="${start.split(',')[1]}" r="5" fill="#2edb63"/>
     <circle cx="${end.split(',')[0]}" cy="${end.split(',')[1]}" r="5" fill="#ff1730"/>
-    <text x="18" y="28" fill="#ffffff" opacity="0.55" font-size="12" font-family="Inter, sans-serif" letter-spacing="2">GPS RACING LINE</text>
+    <text x="18" y="28" fill="#ffffff" opacity="0.55" font-size="12" font-family="Inter, sans-serif" letter-spacing="2">SMOOTHED GPS RACING LINE</text>
   </svg>`;
 }
 
