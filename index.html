@@ -3383,6 +3383,11 @@ let comparisonAksysSessions = [];
 let selectedComparisonSession = null;
 let overlayVideoOffset = 0;
 let overlayAnimationFrame = null;
+let overlayVideoObjectUrl = null;
+let overlayExportRecorder = null;
+let overlayExportChunks = [];
+let overlayExportAnimationFrame = null;
+let overlayExportUrl = null;
 
 async function handleImportFile(event) {
   const files = Array.from(event.target.files || []);
@@ -3416,6 +3421,7 @@ async function handleImportFile(event) {
   } catch(e) {
     pendingImportedLaps = [];
     pendingImportAnalysis = null;
+    stopOverlayExport();
     document.getElementById('import-preview').innerHTML = `<div class="empty-state"><div class="empty-text">${escapeHtml(e.message)}</div></div>`;
     document.getElementById('import-analysis').innerHTML = '';
     document.getElementById('reference-comparison').innerHTML = '';
@@ -4533,13 +4539,15 @@ function renderVideoOverlayPreview() {
           <div class="info-value">RaceBox-style Telemetry Overlay</div>
           <div class="info-sub">Local browser preview only. Video is not uploaded.</div>
         </div>
-        <span class="status-pill good">PHASE 1</span>
+        <span class="status-pill good">PHASE 2</span>
       </div>
       <div class="form-inline" style="margin-bottom:12px;">
         <input type="file" id="overlay-video-file" accept="video/*" onchange="loadOverlayVideo(event)" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text);">
         <input id="overlay-offset" type="number" step="0.1" value="${overlayVideoOffset}" onchange="setOverlayOffset(this.value)" placeholder="Offset seconds">
         <button class="ghost-btn" onclick="nudgeOverlayOffset(-0.5)">-0.5s</button>
         <button class="ghost-btn" onclick="nudgeOverlayOffset(0.5)">+0.5s</button>
+        <button class="primary-btn" onclick="startOverlayExport()">Render Export</button>
+        <button class="ghost-btn" onclick="stopOverlayExport()">Stop</button>
       </div>
       <div style="position:relative;background:#05070a;border:1px solid var(--border);border-radius:18px;overflow:hidden;min-height:220px;">
         <video id="overlay-video" controls playsinline style="display:block;width:100%;max-height:70vh;background:#000;"></video>
@@ -4564,10 +4572,13 @@ function renderVideoOverlayPreview() {
           </div>
         </div>
       </div>
+      <div id="overlay-export-status" class="info-sub" style="margin-top:10px;">Select a video, then click Render Export to create a downloadable telemetry overlay video.</div>
+      <canvas id="overlay-export-canvas" width="1280" height="720" style="display:none;"></canvas>
+      <div id="overlay-export-download" style="margin-top:10px;"></div>
       <div class="info-grid" style="margin-top:12px;">
         <div class="info-card"><div class="info-label">Telemetry Source</div><div class="info-value">${escapeHtml(sourceName.split(' · ')[0])}</div><div class="info-sub">${pendingImportAnalysis.detectedHz ? pendingImportAnalysis.detectedHz.toFixed(1)+' Hz' : 'Hz unavailable'} · ${pendingImportAnalysis.pointCount} points</div></div>
         <div class="info-card"><div class="info-label">Sync Offset</div><div class="info-value" id="overlay-offset-label">${overlayVideoOffset.toFixed(1)}s</div><div class="info-sub">Positive offset moves telemetry later in video.</div></div>
-        <div class="info-card"><div class="info-label">Export</div><div class="info-value">PREVIEW ONLY</div><div class="info-sub">Phase 2/3 will add rendered video export.</div></div>
+        <div class="info-card"><div class="info-label">Export</div><div class="info-value">WEBM READY</div><div class="info-sub">Rendered locally in Chrome. Video is not uploaded.</div></div>
       </div>
     </div>`;
 }
@@ -4577,13 +4588,24 @@ function loadOverlayVideo(event) {
   const video = document.getElementById('overlay-video');
   const hud = document.getElementById('overlay-hud');
   if (!file || !video) return;
-  if (video.src?.startsWith('blob:')) URL.revokeObjectURL(video.src);
-  video.src = URL.createObjectURL(file);
+  stopOverlayExport();
+  if (overlayVideoObjectUrl) URL.revokeObjectURL(overlayVideoObjectUrl);
+  overlayVideoObjectUrl = URL.createObjectURL(file);
+  video.src = overlayVideoObjectUrl;
   if (hud) hud.style.display = 'block';
   video.onplay = startOverlayLoop;
   video.onpause = stopOverlayLoop;
   video.onseeked = updateVideoOverlay;
   video.ontimeupdate = updateVideoOverlay;
+  video.onended = null;
+  video.onloadedmetadata = () => {
+    updateOverlayExportStatus(`Video loaded: ${file.name} · ${formatSignedNumber(video.duration, 's').replace('+','')}`);
+    updateVideoOverlay();
+  };
+  const download = document.getElementById('overlay-export-download');
+  if (download) download.innerHTML = '';
+  if (overlayExportUrl) URL.revokeObjectURL(overlayExportUrl);
+  overlayExportUrl = null;
   updateVideoOverlay();
 }
 
@@ -4628,6 +4650,273 @@ function updateVideoOverlay() {
   setText('overlay-lap-time', formatLapTime(telemetry.lapElapsed));
   const mini = document.getElementById('overlay-mini-map');
   if (mini) mini.innerHTML = renderOverlayMiniMapSvg(pendingImportAnalysis.smoothedPoints || pendingImportAnalysis.points, telemetry.point);
+}
+
+async function startOverlayExport() {
+  const video = document.getElementById('overlay-video');
+  const canvas = document.getElementById('overlay-export-canvas');
+  if (!video?.src || !canvas || !pendingImportAnalysis?.points?.length) {
+    updateOverlayExportStatus('Load telemetry and select a video before rendering export.');
+    return;
+  }
+  if (typeof MediaRecorder === 'undefined' || !canvas.captureStream) {
+    updateOverlayExportStatus('This browser cannot render video export. Use Chrome on desktop.');
+    return;
+  }
+  stopOverlayExport();
+  overlayExportChunks = [];
+  if (overlayExportUrl) URL.revokeObjectURL(overlayExportUrl);
+  overlayExportUrl = null;
+  document.getElementById('overlay-export-download').innerHTML = '';
+
+  const originalMuted = video.muted;
+  const originalControls = video.controls;
+  const originalTime = video.currentTime || 0;
+  video.pause();
+  video.muted = true;
+  video.controls = false;
+  video.currentTime = 0;
+  await waitForVideoSeek(video);
+
+  const fps = 30;
+  const stream = canvas.captureStream(fps);
+  const mimeType = selectOverlayMimeType();
+  overlayExportRecorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 7000000 } : { videoBitsPerSecond: 7000000 });
+  overlayExportRecorder.ondataavailable = event => {
+    if (event.data?.size) overlayExportChunks.push(event.data);
+  };
+  overlayExportRecorder.onstop = () => {
+    const type = overlayExportChunks[0]?.type || mimeType || 'video/webm';
+    const blob = new Blob(overlayExportChunks, { type });
+    overlayExportUrl = URL.createObjectURL(blob);
+    const ext = type.includes('mp4') ? 'mp4' : 'webm';
+    const source = sourceDisplayName(pendingImportAnalysis.source || pendingImportedLaps[0]?.externalGpsSource).replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+    const name = `AKSYS_Overlay_${source || 'Telemetry'}_${new Date().toISOString().slice(0,10)}.${ext}`;
+    document.getElementById('overlay-export-download').innerHTML = `
+      <a class="primary-btn" href="${overlayExportUrl}" download="${name}" style="display:inline-flex;text-decoration:none;">Download Overlay Video</a>
+      <span class="info-sub" style="margin-left:10px;">${(blob.size / 1024 / 1024).toFixed(1)} MB · ${ext.toUpperCase()}</span>`;
+    updateOverlayExportStatus('Render complete. Download is ready.');
+    video.muted = originalMuted;
+    video.controls = originalControls;
+    video.onended = null;
+    video.currentTime = Math.min(originalTime, video.duration || originalTime);
+  };
+
+  const startedAt = performance.now();
+  overlayExportRecorder.start(1000);
+  updateOverlayExportStatus('Rendering overlay video... keep this tab open.');
+  const draw = () => {
+    drawOverlayFrame(canvas, video);
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    if (duration > 0) {
+      const pct = Math.min(100, (video.currentTime / duration) * 100);
+      updateOverlayExportStatus(`Rendering overlay video... ${pct.toFixed(0)}% · ${formatLapTime(video.currentTime)} / ${formatLapTime(duration)}`);
+    }
+    overlayExportAnimationFrame = requestAnimationFrame(draw);
+  };
+  draw();
+  video.onended = () => {
+    const elapsed = ((performance.now() - startedAt) / 1000).toFixed(1);
+    stopOverlayExport({ complete: true, message: `Finalizing export after ${elapsed}s render...` });
+  };
+  try {
+    await video.play();
+  } catch (error) {
+    stopOverlayExport();
+    updateOverlayExportStatus(`Could not start video playback for export: ${error.message}`);
+  }
+}
+
+function stopOverlayExport(options = {}) {
+  if (overlayExportAnimationFrame) cancelAnimationFrame(overlayExportAnimationFrame);
+  overlayExportAnimationFrame = null;
+  if (overlayExportRecorder && overlayExportRecorder.state !== 'inactive') {
+    if (options.message) updateOverlayExportStatus(options.message);
+    overlayExportRecorder.stop();
+  } else if (!options.complete && document.getElementById('overlay-video')) {
+    updateOverlayExportStatus('Export stopped.');
+  }
+  overlayExportRecorder = null;
+}
+
+function selectOverlayMimeType() {
+  const choices = [
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm'
+  ];
+  return choices.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function waitForVideoSeek(video) {
+  return new Promise(resolve => {
+    if (video.readyState >= 2 && Math.abs(video.currentTime) < 0.05) return resolve();
+    const done = () => {
+      video.removeEventListener('seeked', done);
+      resolve();
+    };
+    video.addEventListener('seeked', done, { once: true });
+    setTimeout(resolve, 1200);
+  });
+}
+
+function updateOverlayExportStatus(message) {
+  const el = document.getElementById('overlay-export-status');
+  if (el) el.textContent = message;
+}
+
+function drawOverlayFrame(canvas, video) {
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#05070a';
+  ctx.fillRect(0, 0, width, height);
+
+  const videoRatio = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : width / height;
+  const canvasRatio = width / height;
+  let drawW = width, drawH = height, drawX = 0, drawY = 0;
+  if (videoRatio > canvasRatio) {
+    drawH = height;
+    drawW = height * videoRatio;
+    drawX = (width - drawW) / 2;
+  } else {
+    drawW = width;
+    drawH = width / videoRatio;
+    drawY = (height - drawH) / 2;
+  }
+  try {
+    ctx.drawImage(video, drawX, drawY, drawW, drawH);
+  } catch {
+    ctx.fillStyle = '#101018';
+    ctx.fillRect(0, 0, width, height);
+  }
+  drawTelemetryHud(ctx, canvas, telemetryAtVideoTime(video.currentTime, overlayVideoOffset));
+}
+
+function drawTelemetryHud(ctx, canvas, telemetry) {
+  if (!telemetry) return;
+  const width = canvas.width;
+  const height = canvas.height;
+  const sourceName = sourceDisplayName(pendingImportAnalysis.source || pendingImportedLaps[0]?.externalGpsSource);
+  const speed = Math.round(telemetry.point.speed || 0);
+  const g = Number.isFinite(telemetry.point.gForce) ? `${Number(telemetry.point.gForce).toFixed(2)}G` : '—';
+  const lean = Number.isFinite(telemetry.point.leanAngle) ? `${Math.abs(Number(telemetry.point.leanAngle)).toFixed(1)}°` : '—';
+  const stateColor = telemetry.state === 'BRAKE' ? '#ff453a' : telemetry.state === 'ACCEL' ? '#ffd000' : '#2edb63';
+
+  drawGlassPanel(ctx, 34, 30, 310, 128);
+  drawLabel(ctx, 'AKSYS LAPTIME', 54, 60, '#ff1730');
+  drawValue(ctx, formatLapTime(telemetry.lapElapsed), 54, 113, 44, '#fff', 'left');
+  drawSmall(ctx, `Lap ${telemetry.lap?.lapNumber || '—'} · ${sourceName}`, 54, 140, 'rgba(255,255,255,.72)', 'left');
+
+  drawGlassPanel(ctx, width - 298, 30, 264, 132);
+  drawLabel(ctx, 'SPEED', width - 54, 60, '#2edb63', 'right');
+  drawValue(ctx, String(speed), width - 88, 116, 54, '#fff', 'right');
+  drawSmall(ctx, 'km/h', width - 54, 116, 'rgba(255,255,255,.72)', 'right');
+  drawSmall(ctx, sourceName, width - 54, 143, 'rgba(255,255,255,.62)', 'right');
+
+  drawGlassPanel(ctx, 34, height - 116, 390, 82);
+  drawLabel(ctx, 'G', 58, height - 84, '#ffd000');
+  drawValue(ctx, g, 58, height - 48, 25, '#fff', 'left');
+  drawLabel(ctx, 'LEAN', 180, height - 84, '#bf5af2');
+  drawValue(ctx, lean, 180, height - 48, 25, '#fff', 'left');
+  drawLabel(ctx, 'STATE', 312, height - 84, stateColor);
+  drawValue(ctx, telemetry.state, 312, height - 48, 25, '#fff', 'left');
+
+  drawMiniMapCanvas(ctx, width - 254, height - 178, 220, 144, pendingImportAnalysis.smoothedPoints || pendingImportAnalysis.points, telemetry.point);
+  drawAksysWatermark(ctx, width, height);
+}
+
+function drawGlassPanel(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.globalAlpha = 0.74;
+  ctx.fillStyle = '#05070a';
+  roundedRect(ctx, x, y, w, h, 18);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,.22)';
+  ctx.lineWidth = 1.5;
+  roundedRect(ctx, x, y, w, h, 18);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function roundedRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function drawLabel(ctx, text, x, y, color, align = 'left') {
+  ctx.font = '900 14px Inter, Arial, sans-serif';
+  ctx.letterSpacing = '2px';
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.fillText(text, x, y);
+  ctx.letterSpacing = '0px';
+}
+
+function drawValue(ctx, text, x, y, size, color, align = 'left') {
+  ctx.font = `900 ${size}px "SF Mono", Menlo, monospace`;
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.fillText(text, x, y);
+}
+
+function drawSmall(ctx, text, x, y, color, align = 'left') {
+  ctx.font = '700 13px Inter, Arial, sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.fillText(String(text).slice(0, 42), x, y);
+}
+
+function drawMiniMapCanvas(ctx, x, y, w, h, points, currentPoint) {
+  if (!points?.length) return;
+  drawGlassPanel(ctx, x, y, w, h);
+  const sampled = points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 250)) === 0);
+  const lats = sampled.map(p => p.lat), lons = sampled.map(p => p.lon);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  const pad = 16;
+  const scale = Math.min((w - pad * 2) / Math.max(0.000001, maxLon - minLon), (h - pad * 2) / Math.max(0.000001, maxLat - minLat));
+  const xOffset = x + (w - (maxLon - minLon) * scale) / 2;
+  const yOffset = y + (h - (maxLat - minLat) * scale) / 2;
+  const sx = p => (p.lon - minLon) * scale + xOffset;
+  const sy = p => y + h - ((p.lat - minLat) * scale + yOffset - y);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  sampled.forEach((p, idx) => idx ? ctx.lineTo(sx(p), sy(p)) : ctx.moveTo(sx(p), sy(p)));
+  ctx.strokeStyle = 'rgba(255,255,255,.28)';
+  ctx.lineWidth = 7;
+  ctx.stroke();
+  ctx.beginPath();
+  sampled.forEach((p, idx) => idx ? ctx.lineTo(sx(p), sy(p)) : ctx.moveTo(sx(p), sy(p)));
+  ctx.strokeStyle = '#ff1730';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  if (currentPoint) {
+    ctx.beginPath();
+    ctx.arc(sx(currentPoint), sy(currentPoint), 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#2edb63';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+  }
+}
+
+function drawAksysWatermark(ctx, width, height) {
+  ctx.save();
+  ctx.font = '900 18px Inter, Arial, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,.74)';
+  ctx.textAlign = 'right';
+  ctx.fillText('AKSYS LapTimer', width - 34, height - 24);
+  ctx.restore();
 }
 
 function telemetryAtVideoTime(videoSeconds, offsetSeconds) {
