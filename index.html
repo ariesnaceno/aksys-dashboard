@@ -2574,7 +2574,7 @@ const circuits = {
     firestore:'Clark International Speedway',
     description:'The premier motorsport venue in the Philippines, home to the Philippine Superbike Championship and international events.',
     record: null,
-    timing:'External PHI-CIS two-point virtual start/finish line loaded.'
+    timing:'RaceBox/Qstarz-style two-point virtual S/F line loaded: 15.207648,120.538890 → 15.207916,120.538758 with direction filtering.'
   },
   BRC: {
     name:'Batangas Racing Circuit', short:'BRC',
@@ -3530,12 +3530,13 @@ async function parseRaceBoxFiles(files) {
   const fileName = entries.map(e => e.fileName).join(' + ');
   const metadata = { ...(gpx?.metadata || {}), ...(csv?.metadata || {}), ...(vbo?.metadata || {}) };
   const finishLine = vbo?.finishLine || gpx?.finishLine || null;
-  const laps = (csv?.laps?.length ? csv.laps : inferLapsFromRaceBoxLine(points, finishLine, fileName)).map((lap, idx) => ({
+  const lineLaps = finishLine?.a && finishLine?.b ? inferLapsFromRaceBoxLine(points, finishLine, fileName) : [];
+  const laps = (lineLaps.length ? lineLaps : (csv?.laps?.length ? csv.laps : inferLapsFromRaceBoxLine(points, finishLine, fileName))).map((lap, idx) => ({
     ...lap,
     lapNumber: lap.lapNumber || idx + 1,
     externalGpsSource: 'RaceBox Mini S',
     timingSourceLabel: sourceDisplayName('RaceBox Mini S'),
-    source: 'racebox_import',
+    source: lineLaps.length ? 'racebox_virtual_line_import' : 'racebox_import',
     importFileName: fileName,
     finishLine,
     declaredHz: 25,
@@ -3760,10 +3761,13 @@ function parseRaceBoxVbo(text, fileName, options = {}) {
 function inferLapsFromRaceBoxLine(points, finishLine, fileName) {
   if (!points?.length || !finishLine?.a || !finishLine?.b) return inferLapsFromPoints(points, fileName, 'racebox_route_import');
   const crossingIndexes = [];
+  const expectedBearing = finishLine.expectedBearing ?? raceBoxExpectedCrossingBearing(finishLine);
   for (let i = 1; i < points.length; i++) {
     if (segmentsIntersect(points[i - 1], points[i], finishLine.a, finishLine.b)) {
       const previousIndex = crossingIndexes[crossingIndexes.length - 1];
-      if (previousIndex === undefined || (points[i].timestamp - points[previousIndex].timestamp) / 1000 > 60) crossingIndexes.push(i);
+      const movementBearing = bearingDegrees(points[Math.max(0, i - 5)], points[Math.min(points.length - 1, i + 5)]);
+      if (expectedBearing !== null && angularDifference(movementBearing, expectedBearing) > 70) continue;
+      if (previousIndex === undefined || (points[i].timestamp - points[previousIndex].timestamp) / 1000 > 90) crossingIndexes.push(i);
     }
   }
   const laps = [];
@@ -3785,10 +3789,11 @@ function inferLapsFromRaceBoxLine(points, finishLine, fileName) {
       startLat: points[startIdx].lat,
       startLon: points[startIdx].lon,
       finishLat: points[endIdx].lat,
-      finishLon: points[endIdx].lon
+      finishLon: points[endIdx].lon,
+      lineCrossingBearing: expectedBearing
     });
   }
-  return laps.length ? laps : inferLapsFromPoints(points, fileName, 'racebox_route_import');
+  return laps;
 }
 
 function parseRaceBoxFinishLine(line) {
@@ -3797,7 +3802,8 @@ function parseRaceBoxFinishLine(line) {
   return {
     a: { lat: raceBoxCoordToDecimal(matches[0], false), lon: raceBoxCoordToDecimal(matches[1], true) },
     b: { lat: raceBoxCoordToDecimal(matches[2], false), lon: raceBoxCoordToDecimal(matches[3], true) },
-    label: 'RaceBox Start / Finish'
+    label: 'RaceBox Start / Finish',
+    expectedBearing: 64.65
   };
 }
 
@@ -3809,8 +3815,32 @@ function raceBoxFinishLineFromWaypoints(waypoints) {
   return {
     a: { lat: start.lat - latOffset / 2, lon: start.lon },
     b: { lat: start.lat + latOffset / 2, lon: start.lon },
-    label: 'RaceBox GPX Start'
+    label: 'RaceBox GPX Start',
+    expectedBearing: 64.65
   };
+}
+
+function raceBoxExpectedCrossingBearing(finishLine) {
+  if (!finishLine?.a || !finishLine?.b) return null;
+  const lineBearing = bearingDegrees(finishLine.a, finishLine.b);
+  return (lineBearing + 90) % 360;
+}
+
+function bearingDegrees(a, b) {
+  if (!a || !b) return null;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const dLon = (b.lon - a.lon) * Math.PI / 180;
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) -
+            Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function angularDifference(a, b) {
+  if (a === null || b === null || !Number.isFinite(a) || !Number.isFinite(b)) return 0;
+  const diff = Math.abs(a - b) % 360;
+  return diff > 180 ? 360 - diff : diff;
 }
 
 function raceBoxCoordToDecimal(value, isLongitude) {
@@ -3994,11 +4024,12 @@ function readWaypointPoints(database) {
 function buildImportAnalysis({ fileName, source, laps = [], points = [], declaredHz = null, trackName = null, sessionDate = null, finishLine = null, metadata = null, satelliteSummary = null }) {
   const detectedHz = detectSampleRate(points);
   const enriched = enrichPointSpeeds(points);
+  const droppedPacketSummary = estimateDroppedPackets(enriched, declaredHz || detectedHz);
   const bestLap = laps.length ? Math.min(...laps.map(l => l.lapSeconds).filter(Number.isFinite)) : null;
   const topSpeed = Math.max(0, ...enriched.map(p => Number(p.speed || 0)).filter(Number.isFinite));
   const brakingZones = detectSpeedZones(enriched, 'brake');
   const accelZones = detectSpeedZones(enriched, 'accel');
-  const confidenceScore = calculateImportConfidence({ points: enriched, laps, detectedHz, declaredHz });
+  const confidenceScore = calculateImportConfidence({ points: enriched, laps, detectedHz, declaredHz, satelliteSummary, droppedPacketSummary });
   return {
     fileName,
     source,
@@ -4012,6 +4043,7 @@ function buildImportAnalysis({ fileName, source, laps = [], points = [], declare
     finishLine,
     metadata,
     satelliteSummary,
+    droppedPacketSummary,
     bestLap: Number.isFinite(bestLap) ? bestLap : null,
     topSpeed,
     brakingZones,
@@ -4109,7 +4141,7 @@ function makeSpeedZone(points, start, end, peakG) {
   };
 }
 
-function calculateImportConfidence({ points, laps, detectedHz, declaredHz }) {
+function calculateImportConfidence({ points, laps, detectedHz, declaredHz, satelliteSummary = null, droppedPacketSummary = null }) {
   let score = 50;
   if (laps?.length) score += 15;
   if (points?.length >= 100) score += 15;
@@ -4118,7 +4150,29 @@ function calculateImportConfidence({ points, laps, detectedHz, declaredHz }) {
   if (hz >= 20) score += 15;
   else if (hz >= 10) score += 10;
   else if (hz >= 1) score += 5;
+  if (satelliteSummary?.avg >= 12) score += 5;
+  else if (satelliteSummary?.avg && satelliteSummary.avg < 8) score -= 10;
+  if (droppedPacketSummary?.estimatedDropped > 50) score -= 8;
+  if (droppedPacketSummary?.estimatedDropped > 150) score -= 10;
   return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function estimateDroppedPackets(points, hz) {
+  if (!points || points.length < 4 || !hz) return null;
+  const expectedInterval = 1 / hz;
+  let longGaps = 0;
+  let estimatedDropped = 0;
+  let maxGap = 0;
+  for (let i = 1; i < points.length; i++) {
+    const dt = (points[i].timestamp - points[i - 1].timestamp) / 1000;
+    if (!Number.isFinite(dt) || dt <= 0 || dt > 10) continue;
+    maxGap = Math.max(maxGap, dt);
+    if (dt > expectedInterval * 2.5) {
+      longGaps += 1;
+      estimatedDropped += Math.max(1, Math.round(dt / expectedInterval) - 1);
+    }
+  }
+  return { longGaps, estimatedDropped, maxGap };
 }
 
 function parsePointTime(value, index = 0) {
@@ -4185,6 +4239,7 @@ function renderImportAnalysis() {
         <div class="info-card"><div class="info-label">Braking Zones</div><div class="info-value">${a.brakingZones.length}</div></div>
         <div class="info-card"><div class="info-label">Accel Zones</div><div class="info-value">${a.accelZones.length}</div></div>
         <div class="info-card"><div class="info-label">Satellites</div><div class="info-value">${a.satelliteSummary ? Math.round(a.satelliteSummary.avg) : '—'}</div><div class="info-sub">${a.satelliteSummary ? `Range ${a.satelliteSummary.min}–${a.satelliteSummary.max}` : 'Not provided'}</div></div>
+        <div class="info-card"><div class="info-label">Dropped Samples</div><div class="info-value">${a.droppedPacketSummary ? a.droppedPacketSummary.estimatedDropped : '—'}</div><div class="info-sub">${a.droppedPacketSummary ? `${a.droppedPacketSummary.longGaps} long gaps detected` : 'Need timestamps'}</div></div>
         <div class="info-card"><div class="info-label">Finish Line</div><div class="info-value">${a.finishLine ? 'VIRTUAL LINE' : '—'}</div><div class="info-sub">${a.finishLine ? `${a.finishLine.a.lat.toFixed(6)}, ${a.finishLine.a.lon.toFixed(6)} → ${a.finishLine.b.lat.toFixed(6)}, ${a.finishLine.b.lon.toFixed(6)}` : 'No S/F endpoints in file'}</div></div>
         <div class="info-card"><div class="info-label">Device</div><div class="info-value">${escapeHtml(a.metadata?.serialNumber || sourceDisplayName(a.source).split(' · ')[0])}</div><div class="info-sub">${a.sessionDate ? new Date(a.sessionDate).toLocaleString() : 'Session date unavailable'}</div></div>
       </div>
