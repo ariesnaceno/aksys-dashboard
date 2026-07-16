@@ -166,19 +166,20 @@ nav{display:flex;gap:2px;}
   grid-template-columns:1fr 1fr 1fr 360px;
   grid-template-areas:
     "banner       banner       banner       banner"
+    "leaderboard  leaderboard  leaderboard  leaderboard"
     "lbl-overview lbl-overview lbl-overview lbl-overview"
     "stats        stats        stats        stats"
     "lbl-circuits lbl-circuits lbl-circuits lbl-circuits"
-    "track        track        weather      sidebar"
-    "lbl-activity lbl-activity lbl-activity sidebar"
-    "events       events       sessions     sidebar";
+    "track        track        weather      weather"
+    "lbl-activity lbl-activity lbl-activity lbl-activity"
+    "events       events       sessions     sessions";
   gap:24px;
 }
 .download-card{grid-area:banner;}
 .stats-row{grid-area:stats;}
 .track-map-card{grid-area:track;}
 .weather-card{grid-area:weather;}
-.lb-card{grid-area:sidebar;align-self:stretch;}
+.lb-card{grid-area:leaderboard;align-self:stretch;}
 .events-card{grid-area:events;}
 .sessions-preview{grid-area:sessions;}
 
@@ -374,14 +375,13 @@ nav{display:flex;gap:2px;}
     grid-template-columns:1fr 1fr 340px;
     grid-template-areas:
       "banner       banner       banner"
+      "leaderboard  leaderboard  leaderboard"
       "lbl-overview lbl-overview lbl-overview"
       "stats        stats        stats"
       "lbl-circuits lbl-circuits lbl-circuits"
-      "track        track        sidebar"
-      "weather      weather      sidebar"
-      "lbl-activity lbl-activity sidebar"
-      "events       events       sidebar"
-      "sessions     sessions     sidebar";
+      "track        track        weather"
+      "lbl-activity lbl-activity lbl-activity"
+      "events       events       sessions";
     gap:18px;
   }
   .stats-row{grid-template-columns:repeat(3,1fr);}
@@ -1549,6 +1549,120 @@ body.theme-motogp .lb-card .lb-tabs-category .lb-tab{
   .lb-card .lb-tab{
     font-size:12px;
   }
+}
+
+/* Dashboard leaderboard is a primary result surface above Overview. */
+#page-dashboard .lb-card{
+  min-height:0;
+  overflow:visible;
+}
+#page-dashboard .lb-card .lb-header{
+  display:grid;
+  grid-template-columns:minmax(180px,.7fr) minmax(420px,2fr) minmax(220px,.8fr);
+  align-items:center;
+  gap:18px;
+  padding:22px 24px;
+}
+#page-dashboard .lb-card .lb-header .section-title{
+  margin:0;
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+#page-dashboard .lb-card .lb-header > div:nth-child(2){
+  grid-column:1;
+  width:max-content;
+  margin-top:-10px;
+}
+#page-dashboard .lb-card .lb-tabs-circuits{
+  grid-column:2;
+  grid-row:1 / span 2;
+  margin:0;
+}
+#page-dashboard .lb-card .lb-tabs-category{
+  grid-column:3;
+  grid-row:1 / span 2;
+  margin:0!important;
+}
+#page-dashboard .lb-card .lb-body{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  overflow:visible;
+}
+#page-dashboard .lb-card .lb-row{
+  min-height:76px;
+  padding:16px 24px;
+  border-right:1px solid var(--border);
+}
+#page-dashboard .lb-card .driver-name{
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:0;
+}
+#page-dashboard .lb-card .driver-meta{
+  color:var(--muted2);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.2px;
+  line-height:1.35;
+}
+#page-dashboard .lb-card .lap-time{
+  color:var(--text);
+  font-size:18px;
+  font-weight:800;
+}
+#page-dashboard .lb-card .delta{
+  color:var(--muted2);
+  font-size:12px;
+  font-weight:700;
+}
+body.theme-motogp #page-dashboard .lb-card{
+  background:#fff;
+  border-color:rgba(17,24,32,.10);
+}
+body.theme-motogp #page-dashboard .lb-card .lb-header{
+  background:#111820;
+  border-bottom-color:rgba(255,255,255,.12);
+}
+body.theme-motogp #page-dashboard .lb-card .lb-header .section-title{
+  color:#fff;
+}
+body.theme-motogp #page-dashboard .lb-card .lb-row{
+  background:#fff;
+  border-color:rgba(17,24,32,.10);
+}
+body.theme-motogp #page-dashboard .lb-card .lb-row:hover{
+  background:#f3f4f5;
+}
+body.theme-motogp #page-dashboard .lb-card .driver-name,
+body.theme-motogp #page-dashboard .lb-card .lap-time{
+  color:#111820;
+}
+body.theme-motogp #page-dashboard .lb-card .driver-meta,
+body.theme-motogp #page-dashboard .lb-card .delta{
+  color:#5d6670;
+}
+@media(max-width:1000px){
+  #page-dashboard .lb-card .lb-header{
+    grid-template-columns:1fr;
+  }
+  #page-dashboard .lb-card .lb-header > div,
+  #page-dashboard .lb-card .lb-tabs-circuits,
+  #page-dashboard .lb-card .lb-tabs-category{
+    grid-column:1;
+    grid-row:auto;
+  }
+  #page-dashboard .lb-card .lb-header > div:nth-child(2){margin-top:0;}
+}
+@media(max-width:700px){
+  #page-dashboard .lb-card .lb-body{grid-template-columns:1fr;}
+  #page-dashboard .lb-card .lb-row{border-right:0;}
+  #page-dashboard .lb-card .lb-header{padding:20px 16px;gap:12px;}
+  #page-dashboard .lb-card .lb-row{padding:15px 16px;}
 }
 
 </style>
